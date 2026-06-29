@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  name      String?
+
+  items  PlaidItem[]
+}
+
+model PlaidItem {
+  id      String  @id @default(uuid(7)) @db.Uuid
+  userId  String  @db.Uuid
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plaidItemId  String    @unique          // Plaid's item_id
+  accessToken  String                     // ENCRYPT at rest (see note)
+  institutionId   String?
+  institutionName String?
+
+  // transactionsSync pagination cursor — null until first successful sync
+  syncCursor   String?
+  status       String    @default("active") // active | login_required | error
+  lastSyncedAt DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts     Account[]
+
+  @@index([userId])
+}
+
+
+model Account {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  itemId          String    @db.Uuid
+  item            PlaidItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  plaidAccountId  String    @unique        // Plaid's account_id
+  name            String
+  officialName    String?
+  mask            String?                  // last 4 digits
+  type            String                   // depository | credit | loan | investment
+  subtype         String?                  // checking | savings | credit card ...
+
+  // latest balance snapshot from Plaid
+  currentBalance   Decimal? @db.Decimal(14, 2)
+  availableBalance Decimal? @db.Decimal(14, 2)
+  isoCurrencyCode  String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  transactions    Transaction[]
+
+  @@index([itemId])
+}
+
+model Transaction {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  accountId            String   @db.Uuid
+  account              Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  plaidTransactionId   String   @unique      // Plaid's transaction_id (upsert key)
+  amount               Decimal  @db.Decimal(14, 2) // Plaid: positive = money out
+  isoCurrencyCode      String?
+  date                 DateTime @db.Date      // posted/authorized date
+  authorizedDate       DateTime? @db.Date
+  name                 String
+  merchantName         String?
+
+  // Plaid personal_finance_category
+  pfcPrimary           String?
+  pfcDetailed          String?
+
+  pending              Boolean  @default(false)
+  pendingTransactionId String?               // links a posted txn to its prior pending one
+  paymentChannel       String?               // online | in store | other
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([accountId, date])
+  @@index([date])
+}
