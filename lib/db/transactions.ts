@@ -1,6 +1,6 @@
 import { Prisma, Transaction } from '@/generated/prisma/client';
 import { prisma } from '../prisma_client';
-import type { TransactionInput } from './types';
+import type { TransactionInput, ListTransactionsOpts } from './types';
 
 export async function upsertTransactions(
     transactions: TransactionInput[],
@@ -50,13 +50,7 @@ export async function deleteTransactions(
 // Read path — from YOUR db, newest first, with optional filters + pagination.
 export async function listTransactions(
     userId: string,
-    opts: {
-        from?: string; // 'YYYY-MM-DD' inclusive lower bound
-        to?: string; // 'YYYY-MM-DD' inclusive upper bound
-        accountId?: string;
-        take?: number;
-        cursor?: string; // last Transaction.id from the previous page
-    } = {},
+    opts: ListTransactionsOpts = {},
     db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<Transaction[]> {
     const { from, to, accountId, take = 50, cursor } = opts;

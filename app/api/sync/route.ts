@@ -1,4 +1,5 @@
 import { after } from 'next/server';
+import type { PlaidItem } from '@/generated/prisma/client';
 import { decrypt } from '@/lib/crypto';
 import {
     deleteTransactions,
@@ -29,22 +30,35 @@ async function syncPage(
     const convertedTransactions: TransactionInput[] = [
         ...data.added,
         ...data.modified,
-    ].map((transaction) => ({
-        plaidTransactionId: transaction.transaction_id,
-        accountId: accountIdByPlaidId.get(transaction.account_id)!,
-        amount: transaction.amount,
-        date: transaction.date,
-        name: transaction.name,
-        isoCurrencyCode: transaction.iso_currency_code ?? undefined,
-        authorizedDate: transaction.authorized_date ?? undefined,
-        merchantName: transaction.merchant_name ?? undefined,
-        pfcPrimary: transaction.personal_finance_category?.primary ?? undefined,
-        pfcDetailed:
-            transaction.personal_finance_category?.detailed ?? undefined,
-        pending: transaction.pending,
-        pendingTransactionId: transaction.pending_transaction_id ?? undefined,
-        paymentChannel: transaction.payment_channel ?? undefined,
-    }));
+    ].map((transaction) => {
+        const accountId = accountIdByPlaidId.get(transaction.account_id);
+        if (!accountId) {
+            throw new Error(
+                `Sync failed for item ${itemId}: transaction ${transaction.transaction_id} ` +
+                    `references unknown Plaid account_id ${transaction.account_id} ` +
+                    `(no matching Account row — accounts may be out of date, re-link or refresh accounts)`
+            );
+        }
+
+        return {
+            plaidTransactionId: transaction.transaction_id,
+            accountId,
+            amount: transaction.amount,
+            date: transaction.date,
+            name: transaction.merchant_name ?? '',
+            isoCurrencyCode: transaction.iso_currency_code ?? undefined,
+            authorizedDate: transaction.authorized_date ?? undefined,
+            merchantName: transaction.merchant_name ?? undefined,
+            pfcPrimary:
+                transaction.personal_finance_category?.primary ?? undefined,
+            pfcDetailed:
+                transaction.personal_finance_category?.detailed ?? undefined,
+            pending: transaction.pending,
+            pendingTransactionId:
+                transaction.pending_transaction_id ?? undefined,
+            paymentChannel: transaction.payment_channel ?? undefined,
+        };
+    });
 
     const removedIds = data.removed.map((r) => r.transaction_id!);
 
@@ -52,7 +66,6 @@ async function syncPage(
         upsertTransactions(convertedTransactions),
         deleteTransactions(removedIds),
     ]);
-    // persist per-page so background failures don't lose progress
     await updateSyncCursor(itemId, data.next_cursor);
 
     return { nextCursor: data.next_cursor, hasMore: data.has_more };
@@ -78,39 +91,52 @@ async function syncRemainingPages(
     }
 }
 
-export async function POST() {
-    const user = await getCurrentUser();
-    const items = await getItemsByUser(user.id);
-
-    await Promise.all(
-        items.map(async (item) => {
-            const accessToken = decrypt(item.accessToken);
-            const accounts = await getAccountsByItem(item.id);
-            const accountIdByPlaidId: AccountMap = new Map(
-                accounts.map((account) => [account.plaidAccountId, account.id])
-            );
-
-            // First page synchronously so the response reflects fresh data.
-            const { nextCursor, hasMore } = await syncPage(
-                item.id,
-                accessToken,
-                accountIdByPlaidId,
-                item.syncCursor ?? undefined
-            );
-
-            // Remaining pages continue in the background after the response.
-            if (hasMore) {
-                after(
-                    syncRemainingPages(
-                        item.id,
-                        accessToken,
-                        accountIdByPlaidId,
-                        nextCursor
-                    )
-                );
-            }
-        })
+// Sync a single item: first page synchronously, rest in the background.
+async function syncItem(item: PlaidItem): Promise<void> {
+    const accessToken = decrypt(item.accessToken);
+    const accounts = await getAccountsByItem(item.id);
+    const accountIdByPlaidId: AccountMap = new Map(
+        accounts.map((account) => [account.plaidAccountId, account.id])
     );
+
+    // First page synchronously so the response reflects fresh data.
+    const { nextCursor, hasMore } = await syncPage(
+        item.id,
+        accessToken,
+        accountIdByPlaidId,
+        item.syncCursor ?? undefined
+    );
+
+    if (!hasMore) return;
+
+    // Remaining pages continue in the background after the response.
+    after(
+        syncRemainingPages(
+            item.id,
+            accessToken,
+            accountIdByPlaidId,
+            nextCursor
+        ).catch((e) =>
+            console.error('Background sync failed', {
+                itemId: item.id,
+                error: e,
+            })
+        )
+    );
+}
+
+export async function POST() {
+    try {
+        const user = await getCurrentUser();
+        const items = await getItemsByUser(user.id);
+        await Promise.all(items.map(syncItem));
+    } catch (e) {
+        console.error('Sync failed', e);
+        return Response.json(
+            { error: 'Failed to sync transactions' },
+            { status: 500 }
+        );
+    }
 
     return Response.json({ ok: true });
 }

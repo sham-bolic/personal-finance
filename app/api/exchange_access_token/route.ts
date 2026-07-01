@@ -2,7 +2,14 @@ import { client } from '@/lib/plaid_client';
 import { AccountInput, getCurrentUser, linkPlaidItem } from '@/lib/db';
 
 export async function POST(request: Request) {
-    const { public_token } = await request.json();
+    let public_token: string | undefined;
+
+    try {
+        ({ public_token } = await request.json());
+    } catch {
+        console.error('Invalid JSON body');
+        return Response.json({ error: 'Invalid JSON body', status: 400 });
+    }
 
     if (!public_token) {
         console.error('Missing public token');

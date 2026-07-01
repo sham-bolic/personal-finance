@@ -1,6 +1,7 @@
-// Normalized input shapes for the data-access layer. External API responses
-// (Plaid) are mapped into these at the route boundary, so lib/db stays
-// decoupled from any SDK's wire format.
+// Input shapes for the data-access layer. External API responses (Plaid) are
+// mapped into the write-side shapes at the route boundary, so lib/db stays
+// decoupled from any SDK's wire format. Read-side query/filter shapes live here
+// too, so consumers import all lib/db types from one place.
 
 export type PlaidItemInput = {
     userId: string;
@@ -36,4 +37,13 @@ export type TransactionInput = {
     pending: boolean;
     pendingTransactionId?: string;
     paymentChannel?: string;
+};
+
+// Read-side filters + pagination for listTransactions.
+export type ListTransactionsOpts = {
+    from?: string; // 'YYYY-MM-DD' inclusive lower bound
+    to?: string; // 'YYYY-MM-DD' inclusive upper bound
+    accountId?: string;
+    take?: number;
+    cursor?: string; // last Transaction.id from the previous page
 };
