@@ -4,9 +4,8 @@ import { PrismaClient } from '@/generated/prisma/client';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 
-if (!connectionString) {
-    console.error('Error creating prisma client due to missing DATABASE_URL/');
-}
+if (!connectionString)
+    throw new Error('Missing DATABASE_URL environment variable');
 
 const globalForPrisma = globalThis as {
     prisma?: PrismaClient;
