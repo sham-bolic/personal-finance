@@ -43,3 +43,10 @@ export async function upsertAccounts(
         )
     );
 }
+
+export async function getAccountsByItem(
+    itemId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<Account[]> {
+    return db.account.findMany({ where: { itemId } });
+}
