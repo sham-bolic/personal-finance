@@ -53,3 +53,10 @@ export async function getItemsByUser(
 ): Promise<PlaidItem[]> {
     return await db.plaidItem.findMany({ where: { userId } });
 }
+
+export async function updateSyncCursor(id: string, syncCursor: string) {
+    await prisma.plaidItem.update({
+        where: { id },
+        data: { syncCursor, lastSyncedAt: new Date() },
+    });
+}
