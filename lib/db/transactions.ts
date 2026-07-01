@@ -36,3 +36,46 @@ export async function upsertTransactions(
         })
     );
 }
+
+export async function deleteTransactions(
+    transactionsIds: string[],
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<void> {
+    if (transactionsIds.length === 0) return;
+    await db.transaction.deleteMany({
+        where: { plaidTransactionId: { in: transactionsIds } },
+    });
+}
+
+// Read path — from YOUR db, newest first, with optional filters + pagination.
+export async function listTransactions(
+    userId: string,
+    opts: {
+        from?: string; // 'YYYY-MM-DD' inclusive lower bound
+        to?: string; // 'YYYY-MM-DD' inclusive upper bound
+        accountId?: string;
+        take?: number;
+        cursor?: string; // last Transaction.id from the previous page
+    } = {},
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<Transaction[]> {
+    const { from, to, accountId, take = 50, cursor } = opts;
+
+    return db.transaction.findMany({
+        where: {
+            account: { item: { userId } }, // scope to this user via Account -> PlaidItem
+            ...(accountId ? { accountId } : {}),
+            ...(from || to
+                ? {
+                      date: {
+                          gte: from ? new Date(from) : undefined,
+                          lte: to ? new Date(to) : undefined,
+                      },
+                  }
+                : {}),
+        },
+        orderBy: { date: 'desc' },
+        take,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
+}
