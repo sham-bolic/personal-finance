@@ -1,5 +1,5 @@
 import { client } from '@/lib/plaid_client';
-import { setAccessToken } from '@/lib/token_store';
+import { AccountInput, getCurrentUser, linkPlaidItem } from '@/lib/db';
 
 export async function POST(request: Request) {
     const { public_token } = await request.json();
@@ -12,17 +12,57 @@ export async function POST(request: Request) {
         );
     }
 
+    let access_token: string, item_id: string;
+
     try {
-        const response = await client.itemPublicTokenExchange({ public_token });
+        const { data } = await client.itemPublicTokenExchange({ public_token });
 
-        // TODO: make the access token persist to a backend
-        setAccessToken(response.data.access_token);
-
-        return Response.json({ status: 200 });
+        access_token = data.access_token;
+        item_id = data.item_id;
     } catch (e) {
         console.error('Error exchanging public token for access token', e);
         return Response.json(
             { error: 'Unable to exchange public token for access token' },
+            { status: 500 }
+        );
+    }
+
+    try {
+        // user lookup and accountsGet are independent — run them concurrently.
+        const [user, accountsRes] = await Promise.all([
+            getCurrentUser(),
+            client.accountsGet({ access_token }),
+        ]);
+
+        const accounts: AccountInput[] = accountsRes.data.accounts.map(
+            (account) => ({
+                plaidAccountId: account.account_id,
+                name: account.name,
+                officialName: account.official_name ?? undefined,
+                mask: account.mask ?? undefined,
+                type: String(account.type),
+                subtype: account.subtype ?? undefined,
+                currentBalance: account.balances.current ?? undefined,
+                availableBalance: account.balances.available ?? undefined,
+                isoCurrencyCode:
+                    account.balances.iso_currency_code ?? undefined,
+            })
+        );
+
+        const item = await linkPlaidItem({
+            userId: user.id,
+            plaidItemId: item_id,
+            accessToken: access_token,
+            accounts,
+        });
+
+        return Response.json({ itemId: item.plaidItemId }, { status: 200 });
+    } catch (e) {
+        // We already hold a valid access_token here; log enough to recover the
+        // link if persistence failed (the public_token is single-use).
+        console.error('Failed to persist linked item', { item_id, e });
+        return Response.json(
+            { error: 'Linked, but failed to save account data' },
             { status: 500 }
         );
     }
