@@ -50,3 +50,10 @@ export async function getAccountsByItem(
 ): Promise<Account[]> {
     return db.account.findMany({ where: { itemId } });
 }
+
+export async function getAccountsByUser(
+    userId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<Account[]> {
+    return db.account.findMany({ where: { item: { userId } } });
+}
