@@ -47,3 +47,52 @@ export type ListTransactionsOpts = {
     take?: number;
     cursor?: string; // last Transaction.id from the previous page
 };
+
+export type CategoryTotalsOpts = {
+    from?: string;
+    to?: string;
+    accountId?: string;
+    direction: 'spending' | 'income';
+};
+
+export type CategoryTotal = {
+    category: string;
+    total: number;
+    count: number;
+};
+
+export type CashFlowOpts = {
+    from?: string;
+    to?: string;
+    accountId?: string;
+};
+
+export type CashFlowSummary = {
+    totalIn: number;
+    totalOut: number;
+    net: number;
+};
+
+export type TopMerchantsOpts = {
+    from?: string;
+    to?: string;
+    accountId?: string;
+    limit?: number;
+};
+
+export type MerchantTotal = {
+    merchantName: string;
+    total: number;
+    count: number;
+};
+
+export type AccountTypeTotal = {
+    type: string;
+    total: number;
+};
+
+export type NetWorth = {
+    assets: number;
+    liabilities: number;
+    net: number;
+};

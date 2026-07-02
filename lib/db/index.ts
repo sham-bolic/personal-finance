@@ -7,3 +7,4 @@ export * from './user';
 export * from './items';
 export * from './accounts';
 export * from './transactions';
+export * from './analytics';
