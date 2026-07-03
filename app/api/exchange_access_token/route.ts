@@ -1,5 +1,7 @@
+import { after } from 'next/server';
 import { client } from '@/lib/plaid_client';
 import { AccountInput, getCurrentUser, linkPlaidItem } from '@/lib/db';
+import { backfillNewItem } from '@/lib/plaid_sync';
 
 export async function POST(request: Request) {
     let public_token: string | undefined;
@@ -62,6 +64,18 @@ export async function POST(request: Request) {
             accessToken: access_token,
             accounts,
         });
+
+        // Full transaction history sync + derived balance backfill run in the
+        // background so linking responds immediately — the net worth graph
+        // otherwise starts as a flat line from today.
+        after(
+            backfillNewItem(item).catch((e) =>
+                console.error('Backfill failed for newly-linked item', {
+                    itemId: item.id,
+                    error: e,
+                })
+            )
+        );
 
         return Response.json({ itemId: item.plaidItemId }, { status: 200 });
     } catch (e) {

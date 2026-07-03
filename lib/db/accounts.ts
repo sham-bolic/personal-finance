@@ -89,3 +89,53 @@ export async function snapshotAccountBalances(
         )
     );
 }
+
+/**
+ * Derive historical daily balances for a newly-linked account from its
+ * transaction history, since Plaid has no historical-balance API on the
+ * base plan. Walks backward from currentBalance: each transaction's signed
+ * amount (Plaid: positive = money out) is exactly the delta that moved the
+ * balance, so undoing transactions day-by-day, newest first, recovers the
+ * end-of-day balance for every day that had activity.
+ *
+ * This is an approximation, not a verified historical fact — it only
+ * accounts for changes reflected as transactions (misses e.g. unposted
+ * interest/fee adjustments), and only reaches as far back as the oldest
+ * transaction Plaid returned.
+ */
+export async function backfillAccountBalanceHistory(
+    accountId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<void> {
+    const account = await db.account.findUniqueOrThrow({
+        where: { id: accountId },
+    });
+    if (account.currentBalance == null) return;
+
+    const dailyNet = await db.transaction.groupBy({
+        by: ['date'],
+        where: { accountId },
+        _sum: { amount: true },
+        orderBy: { date: 'desc' },
+    });
+    if (dailyNet.length === 0) return;
+
+    // Newest first: `runningBalance` starts as the end-of-day balance for the
+    // most recent date with activity (equal to currentBalance, since nothing
+    // has moved the balance since then) and steps backward one day at a time,
+    // undoing each day's net movement to recover the balance before it.
+    let runningBalance = Number(account.currentBalance);
+
+    await Promise.all(
+        dailyNet.map(({ date, _sum }) => {
+            const balance = runningBalance;
+            runningBalance += Number(_sum.amount ?? 0);
+
+            return db.accountBalanceSnapshot.upsert({
+                where: { accountId_date: { accountId, date } },
+                update: { currentBalance: balance },
+                create: { accountId, date, currentBalance: balance },
+            });
+        })
+    );
+}
