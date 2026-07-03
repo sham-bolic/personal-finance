@@ -9,6 +9,8 @@ import {
     MerchantTotal,
     AccountTypeTotal,
     NetWorth,
+    NetWorthHistoryOpts,
+    NetWorthHistoryPoint,
 } from './types';
 
 export async function getTotalsByCategory(
@@ -158,4 +160,59 @@ export async function getNetWorth(
     );
 
     return { assets, liabilities, net: assets - liabilities };
+}
+
+// Net worth over time, built from AccountBalanceSnapshot rather than live
+// Account.currentBalance (which only reflects today). Account.type is read
+// live rather than denormalized onto the snapshot, so a Plaid reclassification
+// (e.g. a mislabeled account type getting corrected) applies retroactively.
+export async function getNetWorthHistory(
+    userId: string,
+    opts: NetWorthHistoryOpts = {},
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<NetWorthHistoryPoint[]> {
+    const { from, to } = opts;
+
+    const snapshots = await db.accountBalanceSnapshot.findMany({
+        where: {
+            account: { item: { userId } },
+            ...(from || to
+                ? {
+                      date: {
+                          gte: from ? new Date(from) : undefined,
+                          lte: to ? new Date(to) : undefined,
+                      },
+                  }
+                : {}),
+        },
+        select: {
+            date: true,
+            currentBalance: true,
+            account: { select: { type: true } },
+        },
+        orderBy: { date: 'asc' },
+    });
+
+    const byDate = new Map<string, { assets: number; liabilities: number }>();
+
+    for (const snapshot of snapshots) {
+        const dateKey = snapshot.date.toISOString().slice(0, 10);
+        const totals = byDate.get(dateKey) ?? { assets: 0, liabilities: 0 };
+        const balance = Number(snapshot.currentBalance);
+
+        if (LIABILITY_ACCOUNT_TYPES.has(snapshot.account.type)) {
+            totals.liabilities += balance;
+        } else {
+            totals.assets += balance;
+        }
+
+        byDate.set(dateKey, totals);
+    }
+
+    return Array.from(byDate.entries()).map(([date, { assets, liabilities }]) => ({
+        date,
+        assets,
+        liabilities,
+        net: assets - liabilities,
+    }));
 }

@@ -96,3 +96,15 @@ export type NetWorth = {
     liabilities: number;
     net: number;
 };
+
+export type NetWorthHistoryOpts = {
+    from?: string;
+    to?: string;
+};
+
+export type NetWorthHistoryPoint = {
+    date: string;
+    assets: number;
+    liabilities: number;
+    net: number;
+};

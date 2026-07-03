@@ -57,3 +57,35 @@ export async function getAccountsByUser(
 ): Promise<Account[]> {
     return db.account.findMany({ where: { item: { userId } } });
 }
+
+/**
+ * Record today's currentBalance/availableBalance for every account belonging
+ * to a user. Account.currentBalance is overwritten in place on every Plaid
+ * sync, so this is the only place that balance history is preserved.
+ * Upserts on (accountId, date), so re-running for the same day is safe.
+ */
+export async function snapshotAccountBalances(
+    userId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<void> {
+    const accounts = await getAccountsByUser(userId, db);
+    const date = new Date(new Date().toISOString().slice(0, 10));
+
+    await Promise.all(
+        accounts.map((account) =>
+            db.accountBalanceSnapshot.upsert({
+                where: { accountId_date: { accountId: account.id, date } },
+                update: {
+                    currentBalance: account.currentBalance ?? 0,
+                    availableBalance: account.availableBalance,
+                },
+                create: {
+                    accountId: account.id,
+                    date,
+                    currentBalance: account.currentBalance ?? 0,
+                    availableBalance: account.availableBalance,
+                },
+            })
+        )
+    );
+}

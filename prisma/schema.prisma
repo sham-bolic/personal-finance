@@ -66,7 +66,8 @@ model Account {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  transactions    Transaction[]
+  transactions      Transaction[]
+  balanceSnapshots  AccountBalanceSnapshot[]
 
   @@index([itemId])
 }
@@ -97,4 +98,19 @@ model Transaction {
 
   @@index([accountId, date])
   @@index([date])
+}
+
+model AccountBalanceSnapshot {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  accountId String  @db.Uuid
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  date             DateTime @db.Date // day this snapshot was taken
+  currentBalance   Decimal  @db.Decimal(14, 2)
+  availableBalance Decimal? @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+
+  @@unique([accountId, date])
+  @@index([accountId])
 }
