@@ -11,6 +11,8 @@ import {
     NetWorth,
     NetWorthHistoryOpts,
     NetWorthHistoryPoint,
+    CashFlowHistoryOpts,
+    CashFlowHistoryPoint,
 } from './types';
 
 export async function getTotalsByCategory(
@@ -215,4 +217,74 @@ export async function getNetWorthHistory(
         liabilities,
         net: assets - liabilities,
     }));
+}
+
+// Daily spend/income plus running cumulative totals, built from Transaction
+// rows (not AccountBalanceSnapshot — balances don't distinguish spend/income,
+// and deltas would conflate transfers between the user's own accounts with
+// real cash flow). Two groupBys (one per sign) mirror the two-aggregate split
+// already used in getCashFlowSummary, since a single groupBy's _sum can't
+// separate positive and negative amounts within the same date bucket — the
+// DB aggregates each sign's rows down to one row per date, rather than
+// pulling every individual transaction row back to sum in JS.
+export async function getCashFlowHistory(
+    userId: string,
+    opts: CashFlowHistoryOpts = {},
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<CashFlowHistoryPoint[]> {
+    const { from, to, accountId } = opts;
+
+    const baseWhere = {
+        account: { item: { userId } },
+        ...(accountId ? { accountId } : {}),
+        ...(from || to
+            ? {
+                  date: {
+                      gte: from ? new Date(from) : undefined,
+                      lte: to ? new Date(to) : undefined,
+                  },
+              }
+            : {}),
+    };
+
+    const [spendRows, incomeRows] = await Promise.all([
+        db.transaction.groupBy({
+            by: ['date'],
+            where: { ...baseWhere, amount: { gt: 0 } },
+            _sum: { amount: true },
+        }),
+        db.transaction.groupBy({
+            by: ['date'],
+            where: { ...baseWhere, amount: { lt: 0 } },
+            _sum: { amount: true },
+        }),
+    ]);
+
+    const byDate = new Map<string, { income: number; spend: number }>();
+
+    for (const row of spendRows) {
+        const dateKey = row.date.toISOString().slice(0, 10);
+        const totals = byDate.get(dateKey) ?? { income: 0, spend: 0 };
+        totals.spend += Number(row._sum.amount ?? 0);
+        byDate.set(dateKey, totals);
+    }
+
+    for (const row of incomeRows) {
+        const dateKey = row.date.toISOString().slice(0, 10);
+        const totals = byDate.get(dateKey) ?? { income: 0, spend: 0 };
+        totals.income += Math.abs(Number(row._sum.amount ?? 0));
+        byDate.set(dateKey, totals);
+    }
+
+    const sortedDates = Array.from(byDate.keys()).sort();
+
+    let cumulativeIncome = 0;
+    let cumulativeSpend = 0;
+
+    return sortedDates.map((date) => {
+        const { income, spend } = byDate.get(date)!;
+        cumulativeIncome += income;
+        cumulativeSpend += spend;
+        return { date, income, spend, cumulativeIncome, cumulativeSpend };
+    });
 }

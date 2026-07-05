@@ -108,3 +108,17 @@ export type NetWorthHistoryPoint = {
     liabilities: number;
     net: number;
 };
+
+export type CashFlowHistoryOpts = {
+    from?: string;
+    to?: string;
+    accountId?: string;
+};
+
+export type CashFlowHistoryPoint = {
+    date: string;
+    income: number;
+    spend: number;
+    cumulativeIncome: number;
+    cumulativeSpend: number;
+};
