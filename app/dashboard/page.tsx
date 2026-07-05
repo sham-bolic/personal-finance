@@ -1,26 +1,16 @@
 'use client';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
-import { Account, Transaction } from '@/generated/prisma/client';
-import type { CashFlowSummary, NetWorth } from '@/lib/db/types';
+import { Transaction } from '@/generated/prisma/client';
+import type { NetWorth } from '@/lib/db/types';
+import { NetWorthChart } from './NetWorthChart';
+import { CashFlowHistoryChart } from './CashFlowHistoryChart';
+import type { AccountDTO } from './types';
 
 type TransactionDTO = Omit<Transaction, 'amount' | 'date'> & {
     amount: string; // Decimal → string over JSON
     date: string; // Date → string over JSON
 };
-
-type AccountDTO = Omit<Account, 'currentBalance' | 'availableBalance'> & {
-    currentBalance: string | null; // Decimal → string over JSON
-    availableBalance: string | null; // Decimal → string over JSON
-};
-
-function formatCurrency(value: number, currency: string | null = 'USD') {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency ?? 'USD',
-        currencyDisplay: 'narrowSymbol',
-    }).format(value);
-}
 
 // Plaid convention: positive amount = money out of the account (outflow),
 // negative amount = money into the account (inflow).
@@ -49,8 +39,12 @@ function formatCategory(value: string | null) {
         .join(' ');
 }
 
+// 'date' is a plain 'YYYY-MM-DD' with no time component. `new Date(date)`
+// parses that as UTC midnight, so formatting it in a timezone west of UTC
+// rolls it back a day — build the Date from local year/month/day instead.
 function formatDate(date: string) {
-    const d = new Date(date);
+    const [year, month, day] = date.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     if (Number.isNaN(d.getTime())) return date;
     return d.toLocaleDateString('en-US', {
         month: 'short',
@@ -93,7 +87,6 @@ export default function TransactionsPage() {
 
     const [netWorth, setNetWorth] = useState<NetWorth | null>(null);
     const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-    const [cashFlow, setCashFlow] = useState<CashFlowSummary | null>(null);
     const [summaryStatus, setSummaryStatus] = useState<
         'loading' | 'ready' | 'error'
     >('loading');
@@ -113,16 +106,12 @@ export default function TransactionsPage() {
     const fetchSummary = useCallback(async () => {
         setSummaryStatus('loading');
         try {
-            const [netWorthRes, accountsRes, cashFlowRes] = await Promise.all(
-                [
-                    axios.get('/api/analytics/net-worth'),
-                    axios.get('/api/accounts'),
-                    axios.get('/api/analytics/cashflow'),
-                ]
-            );
+            const [netWorthRes, accountsRes] = await Promise.all([
+                axios.get('/api/analytics/net-worth'),
+                axios.get('/api/accounts'),
+            ]);
             setNetWorth(netWorthRes.data.net_worth ?? null);
             setAccounts(accountsRes.data.accounts ?? []);
-            setCashFlow(cashFlowRes.data.cash_flow ?? null);
             setSummaryStatus('ready');
         } catch {
             setSummaryStatus('error');
@@ -150,7 +139,6 @@ export default function TransactionsPage() {
                 status={summaryStatus}
                 netWorth={netWorth}
                 accounts={accounts}
-                cashFlow={cashFlow}
             />
 
             {/* Header */}
@@ -320,12 +308,10 @@ function DashboardSummary({
     status,
     netWorth,
     accounts,
-    cashFlow,
 }: {
     status: 'loading' | 'ready' | 'error';
     netWorth: NetWorth | null;
     accounts: AccountDTO[];
-    cashFlow: CashFlowSummary | null;
 }) {
     if (status === 'error') {
         return (
@@ -339,108 +325,18 @@ function DashboardSummary({
     }
 
     return (
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid grid-cols-1 gap-4">
             <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-                <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
-                    Net Worth
-                </h2>
-                {status === 'loading' || !netWorth ? (
-                    <SummarySkeleton />
-                ) : (
-                    <>
-                        <p className="mt-2 text-2xl font-semibold tracking-tight">
-                            {formatCurrency(netWorth.net)}
-                        </p>
-                        <div className="mt-3 flex gap-4 text-xs text-black/60 dark:text-white/60">
-                            <span>
-                                Assets{' '}
-                                <span className="font-medium text-black/80 dark:text-white/80">
-                                    {formatCurrency(netWorth.assets)}
-                                </span>
-                            </span>
-                            <span>
-                                Liabilities{' '}
-                                <span className="font-medium text-black/80 dark:text-white/80">
-                                    {formatCurrency(netWorth.liabilities)}
-                                </span>
-                            </span>
-                        </div>
-                        {accounts.length > 0 && (
-                            <ul className="mt-4 flex flex-col gap-2 border-t border-black/5 pt-3 dark:border-white/5">
-                                {accounts.map((a) => (
-                                    <li
-                                        key={a.id}
-                                        className="flex items-center justify-between text-sm"
-                                    >
-                                        <span className="text-black/70 dark:text-white/70">
-                                            {a.name}
-                                            {a.mask && (
-                                                <span className="text-black/40 dark:text-white/40">
-                                                    {' '}
-                                                    ••{a.mask}
-                                                </span>
-                                            )}
-                                        </span>
-                                        <span className="font-mono tabular-nums">
-                                            {a.currentBalance !== null
-                                                ? formatCurrency(
-                                                      Number(a.currentBalance),
-                                                      a.isoCurrencyCode
-                                                  )
-                                                : '—'}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </>
-                )}
+                <NetWorthChart
+                    netWorth={netWorth}
+                    accounts={accounts}
+                    summaryStatus={status}
+                />
             </section>
 
             <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
-                <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
-                    Cash Flow
-                </h2>
-                {status === 'loading' || !cashFlow ? (
-                    <SummarySkeleton />
-                ) : (
-                    <>
-                        <p
-                            className={`mt-2 text-2xl font-semibold tracking-tight ${
-                                cashFlow.net >= 0
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : ''
-                            }`}
-                        >
-                            {cashFlow.net >= 0 ? '+' : ''}
-                            {formatCurrency(cashFlow.net)}
-                        </p>
-                        <div className="mt-3 flex gap-4 text-xs text-black/60 dark:text-white/60">
-                            <span>
-                                Income{' '}
-                                <span className="font-medium text-black/80 dark:text-white/80">
-                                    {formatCurrency(cashFlow.totalIn)}
-                                </span>
-                            </span>
-                            <span>
-                                Spending{' '}
-                                <span className="font-medium text-black/80 dark:text-white/80">
-                                    {formatCurrency(cashFlow.totalOut)}
-                                </span>
-                            </span>
-                        </div>
-                    </>
-                )}
+                <CashFlowHistoryChart />
             </section>
-        </div>
-    );
-}
-
-function SummarySkeleton() {
-    return (
-        <div className="mt-2 flex flex-col gap-2">
-            <div className="h-7 w-32 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-            <div className="h-3 w-40 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
         </div>
     );
 }
