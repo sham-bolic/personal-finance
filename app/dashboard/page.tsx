@@ -45,37 +45,11 @@ function formatDate(date: string) {
     });
 }
 
-function Spinner({ className = '' }: { className?: string }) {
-    return (
-        <svg
-            className={`animate-spin motion-reduce:animate-none ${className}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-        >
-            <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-            />
-            <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4z"
-            />
-        </svg>
-    );
-}
-
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading'
     );
-    const [syncing, setSyncing] = useState(false);
 
     const [netWorth, setNetWorth] = useState<NetWorth | null>(null);
     const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -115,16 +89,6 @@ export default function TransactionsPage() {
         fetchSummary();
     }, [fetchTransactions, fetchSummary]); // run once on mount
 
-    const handleSync = useCallback(async () => {
-        setSyncing(true);
-        try {
-            await axios.post('/api/sync');
-            await Promise.all([fetchTransactions(), fetchSummary()]);
-        } finally {
-            setSyncing(false);
-        }
-    }, [fetchTransactions, fetchSummary]);
-
     return (
         <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
             <DashboardSummary
@@ -134,48 +98,19 @@ export default function TransactionsPage() {
             />
 
             {/* Header */}
-            <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Transactions
-                    </h1>
-                    <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-                        {status === 'ready'
-                            ? `${transactions.length} ${
-                                  transactions.length === 1
-                                      ? 'transaction'
-                                      : 'transactions'
-                              }`
-                            : 'Your recent account activity'}
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={handleSync}
-                    disabled={syncing}
-                    aria-label="Sync transactions"
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                    {syncing ? (
-                        <Spinner className="h-4 w-4" />
-                    ) : (
-                        <svg
-                            className="h-4 w-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                        >
-                            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                            <path d="M21 3v6h-6" />
-                        </svg>
-                    )}
-                    {syncing ? 'Syncing…' : 'Sync'}
-                </button>
+            <header className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Transactions
+                </h1>
+                <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+                    {status === 'ready'
+                        ? `${transactions.length} ${
+                              transactions.length === 1
+                                  ? 'transaction'
+                                  : 'transactions'
+                          }`
+                        : 'Your recent account activity'}
+                </p>
             </header>
 
             {/* Content */}
@@ -206,7 +141,8 @@ export default function TransactionsPage() {
                             No transactions yet
                         </p>
                         <p className="text-sm text-black/60 dark:text-white/60">
-                            Hit “Sync” to pull in your latest account activity.
+                            Connect a bank account to see your latest
+                            activity.
                         </p>
                     </div>
                 )}
