@@ -100,6 +100,7 @@ export async function getBudgetProgress(
         const spent = spentByCategory.get(budget.category) ?? 0;
         const monthlyAmount = Number(budget.monthlyAmount);
         return {
+            id: budget.id,
             category: budget.category,
             monthlyAmount,
             spent,

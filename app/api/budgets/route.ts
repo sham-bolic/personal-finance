@@ -1,5 +1,5 @@
 import { getCurrentUser, getBudgetProgress, upsertBudget } from '@/lib/db';
-import { PlaidPrimaryCategory } from '@/generated/prisma/client';
+import { BUDGETABLE_CATEGORIES } from '@/lib/plaid_categories';
 
 function currentMonth(): string {
     return new Date().toISOString().slice(0, 7);
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { category, monthlyAmount, effectiveFrom } = body;
 
-    if (!Object.values(PlaidPrimaryCategory).includes(category)) {
+    if (!BUDGETABLE_CATEGORIES.includes(category)) {
         return Response.json({ error: 'Invalid category' }, { status: 400 });
     }
     if (typeof monthlyAmount !== 'number' || monthlyAmount <= 0) {

@@ -1,4 +1,12 @@
-import { PlaidPrimaryCategory } from '@/generated/prisma/client';
+import { PlaidPrimaryCategory } from '@/generated/prisma/enums';
+
+// Categories a user can set a spending budget against. Excludes inflow
+// categories (income, transfers in) — those aren't spending, so "budgeting"
+// them doesn't make sense. Sorted alphabetically by label for the category
+// picker.
+export const BUDGETABLE_CATEGORIES = Object.values(PlaidPrimaryCategory)
+    .filter((category) => category !== 'INCOME' && category !== 'TRANSFER_IN')
+    .sort((a, b) => formatPlaidCategory(a)!.localeCompare(formatPlaidCategory(b)!));
 
 // Plaid's personal_finance_category values are SCREAMING_SNAKE_CASE.
 // Shared by free-form Transaction.pfcPrimary/pfcDetailed strings and the

@@ -134,6 +134,7 @@ export type BudgetInput = {
 };
 
 export type BudgetProgress = {
+    id: string;
     category: PlaidPrimaryCategory;
     monthlyAmount: number;
     spent: number;
