@@ -1,7 +1,10 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+
+export type CurrentUser = { email: string | null; name: string | null } | null;
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard' },
@@ -10,8 +13,16 @@ const NAV_ITEMS = [
     { href: '/piggyai', label: 'Ask Piggy' },
 ];
 
-export default function SideNav() {
+export default function SideNav({ user }: { user: CurrentUser }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const supabase = createClient();
+
+    async function handleSignOut() {
+        await supabase.auth.signOut();
+        router.push('/login');
+        router.refresh();
+    }
 
     return (
         <nav className="fixed inset-y-0 left-0 flex w-56 shrink-0 flex-col gap-1 border-r border-black/10 px-3 py-6 dark:border-white/10">
@@ -34,6 +45,29 @@ export default function SideNav() {
                     </Link>
                 );
             })}
+
+            <div className="mt-auto border-t border-black/10 pt-3 dark:border-white/10">
+                {user ? (
+                    <div className="flex flex-col gap-2">
+                        <span className="truncate px-3 text-sm text-black/60 dark:text-white/60">
+                            {user.name || user.email}
+                        </span>
+                        <button
+                            onClick={handleSignOut}
+                            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
+                        >
+                            Sign out
+                        </button>
+                    </div>
+                ) : (
+                    <Link
+                        href="/login"
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
+                    >
+                        Sign in
+                    </Link>
+                )}
+            </div>
         </nav>
     );
 }
