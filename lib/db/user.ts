@@ -1,18 +1,31 @@
 import { prisma } from '@/lib/prisma_client';
+import { createClient } from '@/lib/supabase/server';
 import type { User } from '@/generated/prisma/client';
 
-// TODO: Make real user auth, until then seed the dev user for dev
 export async function getCurrentUser(): Promise<User> {
-    return getOrCreateDevUser();
-}
+    const supabase = await createClient();
+    const {
+        data: { user: authUser },
+    } = await supabase.auth.getUser();
 
-async function getOrCreateDevUser(): Promise<User> {
-    const id = process.env.DEV_USER_ID;
-    if (!id) throw new Error('Missing DEV_USER_ID environment variable');
+    if (!authUser) {
+        const err = new Error('Not authenticated');
+        Object.assign(err, { status: 401 });
+        throw err;
+    }
 
+    const existing = await prisma.user.findUnique({ where: { id: authUser.id } });
+    if (existing) return existing;
+
+    // Fallback in case the auth.users sync trigger hasn't fired yet (e.g.
+    // raced with signup) — mirrors the row ourselves. Only hit once per user.
     return prisma.user.upsert({
-        where: { id },
+        where: { id: authUser.id },
         update: {},
-        create: { id, email: 'dev@example.com', name: 'Dev User' },
+        create: {
+            id: authUser.id,
+            email: authUser.email!,
+            name: authUser.user_metadata?.name ?? null,
+        },
     });
 }
