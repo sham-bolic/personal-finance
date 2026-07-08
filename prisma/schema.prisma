@@ -19,7 +19,9 @@ model User {
   email     String   @unique
   name      String?
 
-  items  PlaidItem[]
+  items    PlaidItem[]
+  budgets  Budget[]
+  goals    Goal[]
 }
 
 model PlaidItem {
@@ -113,4 +115,72 @@ model AccountBalanceSnapshot {
 
   @@unique([accountId, date])
   @@index([accountId])
+}
+
+enum PlaidPrimaryCategory {
+  INCOME
+  TRANSFER_IN
+  TRANSFER_OUT
+  LOAN_PAYMENTS
+  BANK_FEES
+  ENTERTAINMENT
+  FOOD_AND_DRINK
+  GENERAL_MERCHANDISE
+  HOME_IMPROVEMENT
+  MEDICAL
+  PERSONAL_CARE
+  GENERAL_SERVICES
+  GOVERNMENT_AND_NON_PROFIT
+  TRANSPORTATION
+  TRAVEL
+  RENT_AND_UTILITIES
+}
+
+model Budget {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category      PlaidPrimaryCategory
+  monthlyAmount Decimal              @db.Decimal(14, 2)
+  effectiveFrom DateTime             @db.Date // budget applies from this date until a later effectiveFrom row for the same category supersedes it
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category, effectiveFrom])
+  @@index([userId])
+}
+
+model Goal {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  targetAmount Decimal   @db.Decimal(14, 2)
+  targetDate   DateTime? @db.Date
+  status       String    @default("active") // active | completed | archived
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contributions GoalContribution[]
+
+  @@index([userId])
+}
+
+model GoalContribution {
+  id     String @id @default(uuid(7)) @db.Uuid
+  goalId String @db.Uuid
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  amount Decimal  @db.Decimal(14, 2)
+  date   DateTime @db.Date
+  note   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+  @@index([goalId, date])
 }
