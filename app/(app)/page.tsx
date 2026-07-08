@@ -1,6 +1,6 @@
 'use client';
 import axios from 'axios';
-import ConnectBankButton from './components/ConnectBankButton';
+import ConnectBankButton from '@/app/components/ConnectBankButton';
 
 export default function Home() {
     return (

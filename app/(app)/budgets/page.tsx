@@ -5,7 +5,7 @@ import type { PlaidPrimaryCategory } from '@/generated/prisma/enums';
 import type { BudgetProgress } from '@/lib/db/types';
 import { BUDGETABLE_CATEGORIES, formatPlaidPrimaryCategory } from '@/lib/plaid_categories';
 import { formatCurrency } from '../dashboard/format';
-import { ProgressBar } from '../components/ProgressBar';
+import { ProgressBar } from '@/app/components/ProgressBar';
 
 export default function BudgetsPage() {
     const [budgets, setBudgets] = useState<BudgetProgress[]>([]);

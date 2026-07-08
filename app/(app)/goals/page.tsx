@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import type { GoalWithProgress } from '@/lib/db/types';
 import { formatCurrency } from '../dashboard/format';
-import { ProgressBar } from '../components/ProgressBar';
+import { ProgressBar } from '@/app/components/ProgressBar';
 
 function formatDate(date: string) {
     const [year, month, day] = date.split('-').map(Number);

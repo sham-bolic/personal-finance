@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { BudgetProgress, GoalWithProgress } from '@/lib/db/types';
 import { formatPlaidPrimaryCategory } from '@/lib/plaid_categories';
 import { formatCurrency } from './format';
-import { ProgressBar } from '../components/ProgressBar';
+import { ProgressBar } from '@/app/components/ProgressBar';
 
 const TOP_N = 3;
 
