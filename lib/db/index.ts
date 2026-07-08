@@ -8,3 +8,5 @@ export * from './items';
 export * from './accounts';
 export * from './transactions';
 export * from './analytics';
+export * from './budgets';
+export * from './goals';

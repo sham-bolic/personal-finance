@@ -3,6 +3,8 @@
 // decoupled from any SDK's wire format. Read-side query/filter shapes live here
 // too, so consumers import all lib/db types from one place.
 
+import type { PlaidPrimaryCategory } from '@/generated/prisma/client';
+
 export type PlaidItemInput = {
     userId: string;
     plaidItemId: string; // Plaid's item_id
@@ -53,6 +55,7 @@ export type CategoryTotalsOpts = {
     to?: string;
     accountId?: string;
     direction: 'spending' | 'income';
+    groupBy?: 'pfcPrimary' | 'pfcDetailed'; // defaults to 'pfcDetailed'
 };
 
 export type CategoryTotal = {
@@ -121,4 +124,49 @@ export type CashFlowHistoryPoint = {
     spend: number;
     cumulativeIncome: number;
     cumulativeSpend: number;
+};
+
+export type BudgetInput = {
+    userId: string;
+    category: PlaidPrimaryCategory;
+    monthlyAmount: number;
+    effectiveFrom?: string; // 'YYYY-MM-DD', defaults to today in the db layer
+};
+
+export type BudgetProgress = {
+    category: PlaidPrimaryCategory;
+    monthlyAmount: number;
+    spent: number;
+    remaining: number;
+};
+
+export type GoalInput = {
+    userId: string;
+    name: string;
+    targetAmount: number;
+    targetDate?: string; // 'YYYY-MM-DD'
+};
+
+export type GoalUpdateInput = {
+    name?: string;
+    targetAmount?: number;
+    targetDate?: string | null;
+    status?: string;
+};
+
+export type GoalContributionInput = {
+    goalId: string;
+    amount: number;
+    date?: string; // 'YYYY-MM-DD', defaults to today in the db layer
+    note?: string;
+};
+
+export type GoalWithProgress = {
+    id: string;
+    name: string;
+    targetAmount: number;
+    targetDate: string | null;
+    status: string;
+    contributed: number;
+    remaining: number;
 };
