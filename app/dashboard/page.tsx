@@ -6,6 +6,7 @@ import type { NetWorth } from '@/lib/db/types';
 import { formatPlaidCategory } from '@/lib/plaid_categories';
 import { NetWorthChart } from './NetWorthChart';
 import { CashFlowHistoryChart } from './CashFlowHistoryChart';
+import { GoalsBudgetsWidget } from './GoalsBudgetsWidget';
 import type { AccountDTO } from './types';
 
 type TransactionDTO = Omit<Transaction, 'amount' | 'date'> & {
@@ -327,6 +328,10 @@ function DashboardSummary({
 
             <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
                 <CashFlowHistoryChart />
+            </section>
+
+            <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+                <GoalsBudgetsWidget />
             </section>
         </div>
     );
