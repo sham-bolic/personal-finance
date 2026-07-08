@@ -20,10 +20,10 @@ export async function getTotalsByCategory(
     opts: CategoryTotalsOpts,
     db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<CategoryTotal[]> {
-    const { from, to, accountId, direction } = opts;
+    const { from, to, accountId, direction, groupBy = 'pfcDetailed' } = opts;
 
     const rows = await db.transaction.groupBy({
-        by: ['pfcDetailed'],
+        by: [groupBy],
         where: {
             account: { item: { userId } },
             amount: direction === 'spending' ? { gt: 0 } : { lt: 0 },
@@ -43,7 +43,7 @@ export async function getTotalsByCategory(
     });
 
     return rows.map((r) => ({
-        category: r.pfcDetailed ?? 'Uncategorized',
+        category: r[groupBy] ?? 'Uncategorized',
         total: Math.abs(Number(r._sum.amount ?? 0)),
         count: r._count,
     }));

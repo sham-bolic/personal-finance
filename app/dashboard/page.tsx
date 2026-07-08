@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { Transaction } from '@/generated/prisma/client';
 import type { NetWorth } from '@/lib/db/types';
+import { formatPlaidCategory } from '@/lib/plaid_categories';
 import { NetWorthChart } from './NetWorthChart';
 import { CashFlowHistoryChart } from './CashFlowHistoryChart';
 import type { AccountDTO } from './types';
@@ -27,16 +28,6 @@ function formatAmount(amount: string, currency: string | null) {
         // Inflows show a leading "+"; outflows show the plain amount.
         display: `${isInflow ? '+' : ''}${formatter.format(Math.abs(value))}`,
     };
-}
-
-// Plaid's personal_finance_category values are SCREAMING_SNAKE_CASE.
-function formatCategory(value: string | null) {
-    if (!value) return null;
-    return value
-        .toLowerCase()
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
 }
 
 // 'date' is a plain 'YYYY-MM-DD' with no time component. `new Date(date)`
@@ -249,10 +240,10 @@ export default function TransactionsPage() {
                                     t.amount,
                                     t.isoCurrencyCode
                                 );
-                                const primaryCategory = formatCategory(
+                                const primaryCategory = formatPlaidCategory(
                                     t.pfcPrimary
                                 );
-                                const detailedCategory = formatCategory(
+                                const detailedCategory = formatPlaidCategory(
                                     t.pfcDetailed
                                 );
                                 return (
