@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 :root {
+    color-scheme: light;
     --background: #f8fafc;
     --foreground: #0f172a;
     --surface: #ffffff;
@@ -17,8 +18,13 @@
     --warning: #b45309;
 }
 
+/* Explicit user choice (set on <html data-theme> by the inline script in
+   app/layout.tsx and toggled by ThemeToggle) always wins. Absent an explicit
+   choice, fall back to the OS preference — this branch is what renders on a
+   user's very first visit, before they've ever touched the toggle. */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme='light']) {
+        color-scheme: dark;
         --background: #0b1220;
         --foreground: #f1f5f9;
         --surface: #131c30;
@@ -34,6 +40,24 @@
         --negative: #f87171;
         --warning: #fbbf24;
     }
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --background: #0b1220;
+    --foreground: #f1f5f9;
+    --surface: #131c30;
+    --surface-hover: #1b2540;
+    --muted: #1b2540;
+    --muted-foreground: #94a3b8;
+    --border: rgba(255, 255, 255, 0.08);
+    --primary: #2563eb;
+    --primary-hover: #3b82f6;
+    --primary-foreground: #ffffff;
+    --link: #60a5fa;
+    --positive: #34d399;
+    --negative: #f87171;
+    --warning: #fbbf24;
 }
 
 @theme inline {

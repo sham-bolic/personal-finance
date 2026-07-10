@@ -14,6 +14,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import ConnectBankButton from './ConnectBankButton';
+import ThemeToggle from './ThemeToggle';
 import { clearChatHistory } from '@/lib/piggyai/local-storage';
 
 export type CurrentUser = { email: string | null; name: string | null } | null;
@@ -88,7 +89,8 @@ export default function SideNav({
                 );
             })}
 
-            <div className="mt-auto border-t border-border pt-3">
+            <div className="mt-auto flex flex-col gap-3 border-t border-border pt-3">
+                <ThemeToggle />
                 {user ? (
                     <div className="flex flex-col gap-3">
                         <ConnectBankButton />
