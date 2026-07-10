@@ -43,7 +43,7 @@ export function CashFlowHistoryChart() {
     }, []);
 
     useEffect(() => {
-        fetchHistory(scale);
+        queueMicrotask(() => fetchHistory(scale));
     }, [fetchHistory, scale]);
 
     return (

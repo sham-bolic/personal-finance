@@ -14,6 +14,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import ConnectBankButton from './ConnectBankButton';
+import { clearChatHistory } from '@/lib/piggyai/local-storage';
 
 export type CurrentUser = { email: string | null; name: string | null } | null;
 
@@ -39,6 +40,7 @@ export default function SideNav({
 
     async function handleSignOut() {
         await supabase.auth.signOut();
+        clearChatHistory();
         router.push('/login');
         router.refresh();
     }

@@ -25,7 +25,7 @@ export default function BudgetsPage() {
     }, []);
 
     useEffect(() => {
-        fetchBudgets();
+        queueMicrotask(fetchBudgets);
     }, [fetchBudgets]);
 
     return (

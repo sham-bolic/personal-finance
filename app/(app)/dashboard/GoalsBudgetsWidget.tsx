@@ -57,7 +57,7 @@ export function GoalsBudgetsWidget() {
     }, []);
 
     useEffect(() => {
-        fetchData();
+        queueMicrotask(fetchData);
     }, [fetchData]);
 
     return (
