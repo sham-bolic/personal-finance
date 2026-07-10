@@ -30,6 +30,8 @@ function CurrentNetWorthSkeleton() {
     );
 }
 
+const COLLAPSED_ACCOUNT_COUNT = 3;
+
 export function NetWorthChart({
     netWorth,
     accounts,
@@ -44,6 +46,7 @@ export function NetWorthChart({
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading'
     );
+    const [accountsExpanded, setAccountsExpanded] = useState(false);
 
     const fetchHistory = useCallback(async (currentScale: TimeScale) => {
         setStatus('loading');
@@ -175,7 +178,10 @@ export function NetWorthChart({
                         Accounts
                     </h3>
                     <ul className="mt-2 flex flex-col gap-2">
-                        {accounts.map((a) => (
+                        {(accountsExpanded
+                            ? accounts
+                            : accounts.slice(0, COLLAPSED_ACCOUNT_COUNT)
+                        ).map((a) => (
                             <li
                                 key={a.id}
                                 className="flex items-center justify-between text-sm"
@@ -200,6 +206,17 @@ export function NetWorthChart({
                             </li>
                         ))}
                     </ul>
+                    {accounts.length > COLLAPSED_ACCOUNT_COUNT && (
+                        <button
+                            type="button"
+                            onClick={() => setAccountsExpanded((v) => !v)}
+                            className="mt-2 cursor-pointer text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+                        >
+                            {accountsExpanded
+                                ? 'Show less'
+                                : `Expand all (${accounts.length})`}
+                        </button>
+                    )}
                 </div>
             )}
         </div>
