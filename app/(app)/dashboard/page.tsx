@@ -45,11 +45,14 @@ function formatDate(date: string) {
     });
 }
 
+const COLLAPSED_TRANSACTION_COUNT = 8;
+
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading'
     );
+    const [transactionsExpanded, setTransactionsExpanded] = useState(false);
 
     const [netWorth, setNetWorth] = useState<NetWorth | null>(null);
     const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -98,11 +101,11 @@ export default function TransactionsPage() {
             />
 
             {/* Header */}
-            <header className="mb-6">
-                <h1 className="text-2xl font-semibold tracking-tight">
+            <header className="mb-3">
+                <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
                     Transactions
-                </h1>
-                <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+                </h2>
+                <p className="mt-1 text-xs text-black/60 dark:text-white/60">
                     {status === 'ready'
                         ? `${transactions.length} ${
                               transactions.length === 1
@@ -141,91 +144,123 @@ export default function TransactionsPage() {
                             No transactions yet
                         </p>
                         <p className="text-sm text-black/60 dark:text-white/60">
-                            Connect a bank account to see your latest
-                            activity.
+                            Connect a bank account to see your latest activity.
                         </p>
                     </div>
                 )}
 
                 {status === 'ready' && transactions.length > 0 && (
-                    <table className="w-full border-collapse text-sm">
-                        <caption className="sr-only">
-                            List of account transactions
-                        </caption>
-                        <thead>
-                            <tr className="border-b border-black/10 text-left text-xs font-medium uppercase tracking-wide text-black/50 dark:border-white/10 dark:text-white/50">
-                                <th scope="col" className="px-4 py-3 font-medium">
-                                    Date
-                                </th>
-                                <th scope="col" className="px-4 py-3 font-medium">
-                                    Description
-                                </th>
-                                <th scope="col" className="px-4 py-3 font-medium">
-                                    Category
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 text-right font-medium"
-                                >
-                                    Amount
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {transactions.map((t) => {
-                                const { isInflow, display } = formatAmount(
-                                    t.amount,
-                                    t.isoCurrencyCode
-                                );
-                                const primaryCategory = formatPlaidCategory(
-                                    t.pfcPrimary
-                                );
-                                const detailedCategory = formatPlaidCategory(
-                                    t.pfcDetailed
-                                );
-                                return (
-                                    <tr
-                                        key={t.plaidTransactionId}
-                                        className="border-b border-black/5 transition-colors last:border-0 hover:bg-black/3 dark:border-white/5 dark:hover:bg-white/4"
+                    <>
+                        <table className="w-full border-collapse text-sm">
+                            <caption className="sr-only">
+                                List of account transactions
+                            </caption>
+                            <thead>
+                                <tr className="border-b border-black/10 text-left text-xs font-medium uppercase tracking-wide text-black/50 dark:border-white/10 dark:text-white/50">
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3 font-medium"
                                     >
-                                        <td className="whitespace-nowrap px-4 py-3 font-mono text-xs tabular-nums text-black/60 dark:text-white/60">
-                                            {formatDate(t.date)}
-                                        </td>
-                                        <td className="px-4 py-3 font-medium">
-                                            {t.name}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {primaryCategory ? (
-                                                <div className="flex flex-col">
-                                                    <span className="text-black/80 dark:text-white/80">
-                                                        {primaryCategory}
-                                                    </span>
-                                                    {detailedCategory && (
-                                                        <span className="text-xs text-black/50 dark:text-white/50">
-                                                            {detailedCategory}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-black/40 dark:text-white/40">
-                                                    Uncategorized
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td
-                                            className={`whitespace-nowrap px-4 py-3 text-right font-mono tabular-nums ${
-                                                isInflow
-                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                    : 'text-black/80 dark:text-white/80'
-                                            }`}
+                                        Date
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3 font-medium"
+                                    >
+                                        Description
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3 font-medium"
+                                    >
+                                        Category
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-4 py-3 text-right font-medium"
+                                    >
+                                        Amount
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(transactionsExpanded
+                                    ? transactions
+                                    : transactions.slice(
+                                          0,
+                                          COLLAPSED_TRANSACTION_COUNT
+                                      )
+                                ).map((t) => {
+                                    const { isInflow, display } = formatAmount(
+                                        t.amount,
+                                        t.isoCurrencyCode
+                                    );
+                                    const primaryCategory = formatPlaidCategory(
+                                        t.pfcPrimary
+                                    );
+                                    const detailedCategory =
+                                        formatPlaidCategory(t.pfcDetailed);
+                                    return (
+                                        <tr
+                                            key={t.plaidTransactionId}
+                                            className="border-b border-black/5 transition-colors last:border-0 hover:bg-black/3 dark:border-white/5 dark:hover:bg-white/4"
                                         >
-                                            {display}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                            <td className="whitespace-nowrap px-4 py-3 font-mono text-xs tabular-nums text-black/60 dark:text-white/60">
+                                                {formatDate(t.date)}
+                                            </td>
+                                            <td className="px-4 py-3 font-medium">
+                                                {t.name}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {primaryCategory ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-black/80 dark:text-white/80">
+                                                            {primaryCategory}
+                                                        </span>
+                                                        {detailedCategory && (
+                                                            <span className="text-xs text-black/50 dark:text-white/50">
+                                                                {
+                                                                    detailedCategory
+                                                                }
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-black/40 dark:text-white/40">
+                                                        Uncategorized
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td
+                                                className={`whitespace-nowrap px-4 py-3 text-right font-mono tabular-nums ${
+                                                    isInflow
+                                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                                        : 'text-black/80 dark:text-white/80'
+                                                }`}
+                                            >
+                                                {display}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                        {transactions.length > COLLAPSED_TRANSACTION_COUNT && (
+                            <div className="border-t border-black/10 px-4 py-3 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setTransactionsExpanded((e) => !e)
+                                    }
+                                    className="cursor-pointer text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+                                >
+                                    {transactionsExpanded
+                                        ? 'Show less'
+                                        : `Expand all (${transactions.length})`}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </main>
@@ -245,7 +280,7 @@ function DashboardSummary({
         return (
             <div
                 role="alert"
-                className="mb-8 rounded-xl border border-black/10 px-6 py-8 text-center text-sm text-black/70 dark:border-white/10 dark:text-white/70"
+                className="mb-6 rounded-xl border border-black/10 px-6 py-8 text-center text-sm text-black/70 dark:border-white/10 dark:text-white/70"
             >
                 We couldn&apos;t load your account summary.
             </div>
@@ -253,8 +288,8 @@ function DashboardSummary({
     }
 
     return (
-        <div className="mb-8 grid grid-cols-1 gap-4">
-            <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+        <div className="mb-6 grid grid-cols-1 gap-4">
+            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
                 <NetWorthChart
                     netWorth={netWorth}
                     accounts={accounts}
@@ -262,11 +297,11 @@ function DashboardSummary({
                 />
             </section>
 
-            <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
                 <CashFlowHistoryChart />
             </section>
 
-            <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
                 <GoalsBudgetsWidget />
             </section>
         </div>

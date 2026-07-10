@@ -50,3 +50,5 @@ export default function SideNavShell({
                 {children}
             </div>
         </>
+    );
+}

@@ -1,19 +1,21 @@
-import SideNav from '@/app/components/SideNav';
+import SideNavShell from '@/app/components/SideNavShell';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const supabase = await createClient();
     const {
         data: { user: authUser },
     } = await supabase.auth.getUser();
     const user = authUser
-        ? { email: authUser.email ?? null, name: authUser.user_metadata?.name ?? null }
+        ? {
+              email: authUser.email ?? null,
+              name: authUser.user_metadata?.name ?? null,
+          }
         : null;
 
-    return (
-        <>
-            <SideNav user={user} />
-            <div className="flex min-h-full flex-1 flex-col pl-56">{children}</div>
-        </>
-    );
+    return <SideNavShell user={user}>{children}</SideNavShell>;
 }

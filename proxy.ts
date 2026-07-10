@@ -2,15 +2,16 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/dashboard', '/budgets', '/goals', '/piggyai'];
+const AUTH_PREFIXES = ['/login', '/signup'];
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function proxy(request: NextRequest) {
-    const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-        request.nextUrl.pathname.startsWith(prefix),
-    );
-    if (!isProtected) return NextResponse.next();
+    const { pathname } = request.nextUrl;
+    const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    const isAuthPage = AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    if (!isProtected && !isAuthPage) return NextResponse.next();
 
     let response = NextResponse.next({ request });
 
@@ -35,8 +36,12 @@ export async function proxy(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (isProtected && !user) {
         return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    if (isAuthPage && user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     return response;
