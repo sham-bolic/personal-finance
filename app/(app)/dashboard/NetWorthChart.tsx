@@ -63,7 +63,7 @@ export function NetWorthChart({
     }, []);
 
     useEffect(() => {
-        fetchHistory(scale);
+        queueMicrotask(() => fetchHistory(scale));
     }, [fetchHistory, scale]);
 
     return (

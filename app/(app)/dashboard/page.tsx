@@ -85,8 +85,10 @@ export default function TransactionsPage() {
     }, []);
 
     useEffect(() => {
-        fetchTransactions();
-        fetchSummary();
+        queueMicrotask(() => {
+            fetchTransactions();
+            fetchSummary();
+        });
     }, [fetchTransactions, fetchSummary]); // run once on mount
 
     return (

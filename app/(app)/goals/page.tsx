@@ -34,7 +34,7 @@ export default function GoalsPage() {
     }, []);
 
     useEffect(() => {
-        fetchGoals();
+        queueMicrotask(fetchGoals);
     }, [fetchGoals]);
 
     return (

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ConnectBankButton from './ConnectBankButton';
+import { clearChatHistory } from '@/lib/piggyai/local-storage';
 
 export type CurrentUser = { email: string | null; name: string | null } | null;
 
@@ -21,6 +22,7 @@ export default function SideNav({ user }: { user: CurrentUser }) {
 
     async function handleSignOut() {
         await supabase.auth.signOut();
+        clearChatHistory();
         router.push('/login');
         router.refresh();
     }
