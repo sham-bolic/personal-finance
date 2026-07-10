@@ -16,6 +16,7 @@ import {
     getGoalsByUser,
     createGoal,
     addGoalContribution,
+    getBudgetsByUser,
     upsertBudget,
     type AccountInput,
 } from '../lib/db';
@@ -126,6 +127,12 @@ async function seedPlaidItem(userId: string): Promise<number> {
 }
 
 async function seedBudgets(userId: string): Promise<number> {
+    const existing = await getBudgetsByUser(userId);
+    if (existing.length > 0) {
+        console.log('Budgets already seeded, skipping.');
+        return 0;
+    }
+
     const budgets = [
         { category: PlaidPrimaryCategory.FOOD_AND_DRINK, monthlyAmount: 500 },
         { category: PlaidPrimaryCategory.ENTERTAINMENT, monthlyAmount: 150 },

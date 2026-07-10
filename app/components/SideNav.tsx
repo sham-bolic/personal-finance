@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import ConnectBankButton from './ConnectBankButton';
 
 export type CurrentUser = { email: string | null; name: string | null } | null;
 
@@ -48,16 +49,19 @@ export default function SideNav({ user }: { user: CurrentUser }) {
 
             <div className="mt-auto border-t border-black/10 pt-3 dark:border-white/10">
                 {user ? (
-                    <div className="flex flex-col gap-2">
-                        <span className="truncate px-3 text-sm text-black/60 dark:text-white/60">
-                            {user.name || user.email}
-                        </span>
-                        <button
-                            onClick={handleSignOut}
-                            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
-                        >
-                            Sign out
-                        </button>
+                    <div className="flex flex-col gap-3">
+                        <ConnectBankButton />
+                        <div className="flex flex-col gap-2">
+                            <span className="truncate px-3 text-sm text-black/60 dark:text-white/60">
+                                {user.name || user.email}
+                            </span>
+                            <button
+                                onClick={handleSignOut}
+                                className="rounded-lg px-3 py-2 text-left text-sm font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
+                            >
+                                Sign out
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <Link
