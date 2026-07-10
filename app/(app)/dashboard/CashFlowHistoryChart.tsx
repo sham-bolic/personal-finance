@@ -62,7 +62,7 @@ export function CashFlowHistoryChart() {
                     role="alert"
                     className="mt-4 flex flex-col items-center gap-3 py-10 text-center"
                 >
-                    <p className="text-sm text-black/70 dark:text-white/70">
+                    <p className="text-sm text-muted-foreground">
                         We couldn&apos;t load your cash flow history.
                     </p>
                     <button

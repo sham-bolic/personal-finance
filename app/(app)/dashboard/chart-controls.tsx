@@ -70,7 +70,7 @@ export function ScaleSelector({
     onChange: (scale: TimeScale) => void;
 }) {
     return (
-        <div className="inline-flex rounded-lg border border-black/10 p-0.5 text-xs dark:border-white/10">
+        <div className="inline-flex rounded-lg border border-border p-0.5 text-xs">
             {TIME_SCALES.map((option) => (
                 <button
                     key={option.value}
@@ -78,8 +78,8 @@ export function ScaleSelector({
                     onClick={() => onChange(option.value)}
                     className={`cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors ${
                         scale === option.value
-                            ? 'bg-blue-700 text-white'
-                            : 'text-black/60 hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/5'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-surface-hover'
                     }`}
                 >
                     {option.label}
@@ -91,6 +91,6 @@ export function ScaleSelector({
 
 export function ChartSkeleton() {
     return (
-        <div className="mt-4 h-64 w-full animate-pulse rounded-lg bg-black/5 motion-reduce:animate-none dark:bg-white/5" />
+        <div className="mt-4 h-64 w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
     );
 }

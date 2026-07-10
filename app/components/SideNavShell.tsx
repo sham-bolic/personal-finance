@@ -28,7 +28,7 @@ export default function SideNavShell({
             <button
                 onClick={() => setMobileOpen(true)}
                 title="Open menu"
-                className="fixed top-4 left-4 z-20 inline-flex rounded-lg border border-black/10 bg-white p-2 text-black/60 shadow-sm transition-colors hover:bg-black/5 hover:text-black md:hidden dark:border-white/10 dark:bg-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white"
+                className="cursor-pointer fixed top-4 left-4 z-20 inline-flex rounded-lg border border-border bg-surface p-2 text-muted-foreground shadow-sm transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
             >
                 <Menu className="size-5" />
             </button>
@@ -36,7 +36,7 @@ export default function SideNavShell({
             {mobileOpen && (
                 <div
                     onClick={() => setMobileOpen(false)}
-                    className="fixed inset-0 z-20 bg-black/30 md:hidden"
+                    className="fixed inset-0 z-20 bg-black/50 md:hidden"
                 />
             )}
 

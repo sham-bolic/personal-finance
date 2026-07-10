@@ -1,18 +1,12 @@
 'use client';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
-import { Transaction } from '@/generated/prisma/client';
-import type { NetWorth } from '@/lib/db/types';
+import type { NetWorth, TransactionDTO } from '@/lib/db/types';
 import { formatPlaidCategory } from '@/lib/plaid_categories';
 import { NetWorthChart } from './NetWorthChart';
 import { CashFlowHistoryChart } from './CashFlowHistoryChart';
 import { GoalsBudgetsWidget } from './GoalsBudgetsWidget';
 import type { AccountDTO } from './types';
-
-type TransactionDTO = Omit<Transaction, 'amount' | 'date'> & {
-    amount: string; // Decimal → string over JSON
-    date: string; // Date → string over JSON
-};
 
 // Plaid convention: positive amount = money out of the account (outflow),
 // negative amount = money into the account (inflow).
@@ -29,6 +23,27 @@ function formatAmount(amount: string, currency: string | null) {
         // Inflows show a leading "+"; outflows show the plain amount.
         display: `${isInflow ? '+' : ''}${formatter.format(Math.abs(value))}`,
     };
+}
+
+const CATEGORY_DOT_CLASSES = [
+    'bg-blue-500',
+    'bg-emerald-500',
+    'bg-amber-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-cyan-500',
+    'bg-orange-500',
+    'bg-teal-500',
+];
+
+// Deterministic color per category name, purely a visual scan aid for the
+// category column — not meant to encode meaning, so no legend is needed.
+function categoryDotClass(category: string) {
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+        hash = (hash * 31 + category.charCodeAt(i)) >>> 0;
+    }
+    return CATEGORY_DOT_CLASSES[hash % CATEGORY_DOT_CLASSES.length];
 }
 
 // 'date' is a plain 'YYYY-MM-DD' with no time component. `new Date(date)`
@@ -96,6 +111,16 @@ export default function TransactionsPage() {
 
     return (
         <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+            <header className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Dashboard
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Your net worth, cash flow, and recent activity at a
+                    glance.
+                </p>
+            </header>
+
             <DashboardSummary
                 status={summaryStatus}
                 netWorth={netWorth}
@@ -104,10 +129,10 @@ export default function TransactionsPage() {
 
             {/* Header */}
             <header className="mb-3">
-                <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
+                <h2 className="text-sm font-medium text-muted-foreground">
                     Transactions
                 </h2>
-                <p className="mt-1 text-xs text-black/60 dark:text-white/60">
+                <p className="mt-1 text-xs text-muted-foreground">
                     {status === 'ready'
                         ? `${transactions.length} ${
                               transactions.length === 1
@@ -119,7 +144,7 @@ export default function TransactionsPage() {
             </header>
 
             {/* Content */}
-            <div className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+            <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
                 {status === 'loading' && <TransactionsSkeleton />}
 
                 {status === 'error' && (
@@ -127,13 +152,13 @@ export default function TransactionsPage() {
                         role="alert"
                         className="flex flex-col items-center gap-3 px-6 py-16 text-center"
                     >
-                        <p className="text-sm text-black/70 dark:text-white/70">
+                        <p className="text-sm text-muted-foreground">
                             We couldn&apos;t load your transactions.
                         </p>
                         <button
                             type="button"
                             onClick={fetchTransactions}
-                            className="cursor-pointer rounded-lg border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:hover:bg-white/5"
+                            className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
                             Try again
                         </button>
@@ -145,7 +170,7 @@ export default function TransactionsPage() {
                         <p className="text-sm font-medium">
                             No transactions yet
                         </p>
-                        <p className="text-sm text-black/60 dark:text-white/60">
+                        <p className="text-sm text-muted-foreground">
                             Connect a bank account to see your latest activity.
                         </p>
                     </div>
@@ -158,7 +183,7 @@ export default function TransactionsPage() {
                                 List of account transactions
                             </caption>
                             <thead>
-                                <tr className="border-b border-black/10 text-left text-xs font-medium uppercase tracking-wide text-black/50 dark:border-white/10 dark:text-white/50">
+                                <tr className="border-b border-border text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                     <th
                                         scope="col"
                                         className="px-4 py-3 font-medium"
@@ -205,9 +230,9 @@ export default function TransactionsPage() {
                                     return (
                                         <tr
                                             key={t.plaidTransactionId}
-                                            className="border-b border-black/5 transition-colors last:border-0 hover:bg-black/3 dark:border-white/5 dark:hover:bg-white/4"
+                                            className="border-b border-border transition-colors last:border-0 hover:bg-surface-hover"
                                         >
-                                            <td className="whitespace-nowrap px-4 py-3 font-mono text-xs tabular-nums text-black/60 dark:text-white/60">
+                                            <td className="font-mono text-xs whitespace-nowrap tabular-nums text-muted-foreground px-4 py-3">
                                                 {formatDate(t.date)}
                                             </td>
                                             <td className="px-4 py-3 font-medium">
@@ -215,29 +240,35 @@ export default function TransactionsPage() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 {primaryCategory ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-black/80 dark:text-white/80">
-                                                            {primaryCategory}
-                                                        </span>
-                                                        {detailedCategory && (
-                                                            <span className="text-xs text-black/50 dark:text-white/50">
-                                                                {
-                                                                    detailedCategory
-                                                                }
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className={`size-1.5 shrink-0 rounded-full ${categoryDotClass(primaryCategory)}`}
+                                                        />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-foreground/90">
+                                                                {primaryCategory}
                                                             </span>
-                                                        )}
+                                                            {detailedCategory && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {
+                                                                        detailedCategory
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-black/40 dark:text-white/40">
+                                                    <span className="text-muted-foreground">
                                                         Uncategorized
                                                     </span>
                                                 )}
                                             </td>
                                             <td
-                                                className={`whitespace-nowrap px-4 py-3 text-right font-mono tabular-nums ${
+                                                className={`font-mono whitespace-nowrap tabular-nums px-4 py-3 text-right ${
                                                     isInflow
-                                                        ? 'text-emerald-600 dark:text-emerald-400'
-                                                        : 'text-black/80 dark:text-white/80'
+                                                        ? 'text-positive'
+                                                        : 'text-foreground/90'
                                                 }`}
                                             >
                                                 {display}
@@ -248,13 +279,13 @@ export default function TransactionsPage() {
                             </tbody>
                         </table>
                         {transactions.length > COLLAPSED_TRANSACTION_COUNT && (
-                            <div className="border-t border-black/10 px-4 py-3 dark:border-white/10">
+                            <div className="border-t border-border px-4 py-3">
                                 <button
                                     type="button"
                                     onClick={() =>
                                         setTransactionsExpanded((e) => !e)
                                     }
-                                    className="cursor-pointer text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+                                    className="cursor-pointer text-xs font-medium text-link hover:underline"
                                 >
                                     {transactionsExpanded
                                         ? 'Show less'
@@ -282,7 +313,7 @@ function DashboardSummary({
         return (
             <div
                 role="alert"
-                className="mb-6 rounded-xl border border-black/10 px-6 py-8 text-center text-sm text-black/70 dark:border-white/10 dark:text-white/70"
+                className="mb-6 rounded-xl border border-border bg-surface px-6 py-8 text-center text-sm text-muted-foreground shadow-sm"
             >
                 We couldn&apos;t load your account summary.
             </div>
@@ -291,7 +322,7 @@ function DashboardSummary({
 
     return (
         <div className="mb-6 grid grid-cols-1 gap-4">
-            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
                 <NetWorthChart
                     netWorth={netWorth}
                     accounts={accounts}
@@ -299,11 +330,11 @@ function DashboardSummary({
                 />
             </section>
 
-            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
                 <CashFlowHistoryChart />
             </section>
 
-            <section className="rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
                 <GoalsBudgetsWidget />
             </section>
         </div>
@@ -312,16 +343,16 @@ function DashboardSummary({
 
 function TransactionsSkeleton() {
     return (
-        <div className="divide-y divide-black/5 dark:divide-white/5">
+        <div className="divide-y divide-border">
             {Array.from({ length: 6 }).map((_, i) => (
                 <div
                     key={i}
                     className="flex items-center justify-between gap-4 px-4 py-3.5"
                 >
-                    <div className="h-3 w-16 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-                    <div className="h-3 flex-1 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-                    <div className="h-3 w-24 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-                    <div className="h-3 w-20 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
+                    <div className="h-3 w-16 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="h-3 flex-1 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="h-3 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="h-3 w-20 animate-pulse rounded bg-muted motion-reduce:animate-none" />
                 </div>
             ))}
         </div>

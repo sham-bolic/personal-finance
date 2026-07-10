@@ -50,6 +50,23 @@ export type ListTransactionsOpts = {
     cursor?: string; // last Transaction.id from the previous page
 };
 
+export type TransactionDTO = {
+    id: string;
+    accountId: string;
+    plaidTransactionId: string;
+    amount: string; // Decimal → string
+    isoCurrencyCode: string | null;
+    date: string; // 'YYYY-MM-DD'
+    authorizedDate: string | null; // 'YYYY-MM-DD'
+    name: string;
+    merchantName: string | null;
+    pfcPrimary: string | null;
+    pfcDetailed: string | null;
+    pending: boolean;
+    pendingTransactionId: string | null;
+    paymentChannel: string | null;
+};
+
 export type CategoryTotalsOpts = {
     from?: string;
     to?: string;

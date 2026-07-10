@@ -268,8 +268,8 @@ function BudgetCard({
                         <span
                             className={`font-medium ${
                                 budget.remaining < 0
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-black/80 dark:text-white/80'
+                                    ? 'text-negative'
+                                    : 'text-foreground/90'
                             }`}
                         >
                             {formatCurrency(budget.remaining)}

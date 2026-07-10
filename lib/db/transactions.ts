@@ -1,6 +1,31 @@
 import { Prisma, Transaction } from '@/generated/prisma/client';
 import { prisma } from '../prisma_client';
-import type { TransactionInput, ListTransactionsOpts } from './types';
+import type { TransactionInput, ListTransactionsOpts, TransactionDTO } from './types';
+
+function toDateOnly(date: Date): string {
+    return date.toISOString().slice(0, 10);
+}
+
+function toTransactionDTO(transaction: Transaction): TransactionDTO {
+    return {
+        id: transaction.id,
+        accountId: transaction.accountId,
+        plaidTransactionId: transaction.plaidTransactionId,
+        amount: String(transaction.amount),
+        isoCurrencyCode: transaction.isoCurrencyCode,
+        date: toDateOnly(transaction.date),
+        authorizedDate: transaction.authorizedDate
+            ? toDateOnly(transaction.authorizedDate)
+            : null,
+        name: transaction.name,
+        merchantName: transaction.merchantName,
+        pfcPrimary: transaction.pfcPrimary,
+        pfcDetailed: transaction.pfcDetailed,
+        pending: transaction.pending,
+        pendingTransactionId: transaction.pendingTransactionId,
+        paymentChannel: transaction.paymentChannel,
+    };
+}
 
 export async function upsertTransactions(
     transactions: TransactionInput[],
@@ -52,10 +77,10 @@ export async function listTransactions(
     userId: string,
     opts: ListTransactionsOpts = {},
     db: Prisma.TransactionClient | typeof prisma = prisma
-): Promise<Transaction[]> {
+): Promise<TransactionDTO[]> {
     const { from, to, accountId, take = 50, cursor } = opts;
 
-    return db.transaction.findMany({
+    const transactions = await db.transaction.findMany({
         where: {
             account: { item: { userId } }, // scope to this user via Account -> PlaidItem
             ...(accountId ? { accountId } : {}),
@@ -72,4 +97,6 @@ export async function listTransactions(
         take,
         ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
+
+    return transactions.map(toTransactionDTO);
 }

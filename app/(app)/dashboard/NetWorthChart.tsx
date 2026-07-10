@@ -24,8 +24,8 @@ import type { AccountDTO } from './types';
 function CurrentNetWorthSkeleton() {
     return (
         <div className="mt-2 flex flex-col gap-2">
-            <div className="h-7 w-32 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-            <div className="h-3 w-40 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
+            <div className="h-7 w-32 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <div className="h-3 w-40 animate-pulse rounded bg-muted motion-reduce:animate-none" />
         </div>
     );
 }
@@ -70,26 +70,26 @@ export function NetWorthChart({
         <div>
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
+                    <h2 className="text-sm font-medium text-muted-foreground">
                         Net Worth
                     </h2>
                     {summaryStatus === 'loading' || !netWorth ? (
                         <CurrentNetWorthSkeleton />
                     ) : (
                         <>
-                            <p className="mt-2 text-2xl font-semibold tracking-tight">
+                            <p className="mt-2 font-mono text-2xl font-semibold tracking-tight tabular-nums">
                                 {formatCurrency(netWorth.net)}
                             </p>
-                            <div className="mt-3 flex gap-4 text-xs text-black/60 dark:text-white/60">
+                            <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
                                 <span>
                                     Assets{' '}
-                                    <span className="font-medium text-black/80 dark:text-white/80">
+                                    <span className="font-medium text-foreground">
                                         {formatCurrency(netWorth.assets)}
                                     </span>
                                 </span>
                                 <span>
                                     Liabilities{' '}
-                                    <span className="font-medium text-black/80 dark:text-white/80">
+                                    <span className="font-medium text-foreground">
                                         {formatCurrency(netWorth.liabilities)}
                                     </span>
                                 </span>
@@ -107,13 +107,13 @@ export function NetWorthChart({
                     role="alert"
                     className="mt-4 flex flex-col items-center gap-3 py-10 text-center"
                 >
-                    <p className="text-sm text-black/70 dark:text-white/70">
+                    <p className="text-sm text-muted-foreground">
                         We couldn&apos;t load your net worth history.
                     </p>
                     <button
                         type="button"
                         onClick={() => fetchHistory(scale)}
-                        className="cursor-pointer rounded-lg border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:hover:bg-white/5"
+                        className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                         Try again
                     </button>
@@ -121,7 +121,7 @@ export function NetWorthChart({
             )}
 
             {status === 'ready' && history.length === 0 && (
-                <p className="mt-6 py-10 text-center text-sm text-black/60 dark:text-white/60">
+                <p className="mt-6 py-10 text-center text-sm text-muted-foreground">
                     Not enough history yet to chart net worth.
                 </p>
             )}
@@ -137,7 +137,7 @@ export function NetWorthChart({
                                 }
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
-                                className="text-black/40 dark:text-white/40"
+                                className="text-muted-foreground"
                                 minTickGap={32}
                                 ticks={computeTicks(
                                     history.map((h) => h.date),
@@ -150,7 +150,7 @@ export function NetWorthChart({
                                 }
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
-                                className="text-black/40 dark:text-white/40"
+                                className="text-muted-foreground"
                                 width={80}
                             />
                             <Tooltip
@@ -158,12 +158,18 @@ export function NetWorthChart({
                                 labelFormatter={(date) =>
                                     formatTooltipDate(String(date))
                                 }
+                                contentStyle={{
+                                    background: 'var(--surface)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '0.5rem',
+                                    color: 'var(--foreground)',
+                                }}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="net"
                                 name="Net worth"
-                                stroke="#2563eb"
+                                stroke="var(--primary)"
                                 strokeWidth={2}
                                 dot={false}
                             />
@@ -173,8 +179,8 @@ export function NetWorthChart({
             )}
 
             {summaryStatus === 'ready' && accounts.length > 0 && (
-                <div className="mt-4 border-t border-black/5 pt-3 dark:border-white/5">
-                    <h3 className="text-xs font-medium text-black/60 dark:text-white/60">
+                <div className="mt-4 border-t border-border pt-3">
+                    <h3 className="text-xs font-medium text-muted-foreground">
                         Accounts
                     </h3>
                     <ul className="mt-2 flex flex-col gap-2">
@@ -186,10 +192,10 @@ export function NetWorthChart({
                                 key={a.id}
                                 className="flex items-center justify-between text-sm"
                             >
-                                <span className="text-black/70 dark:text-white/70">
+                                <span className="text-foreground/90">
                                     {a.name}
                                     {a.mask && (
-                                        <span className="text-black/40 dark:text-white/40">
+                                        <span className="text-muted-foreground">
                                             {' '}
                                             ••{a.mask}
                                         </span>
@@ -210,7 +216,7 @@ export function NetWorthChart({
                         <button
                             type="button"
                             onClick={() => setAccountsExpanded((v) => !v)}
-                            className="mt-2 cursor-pointer text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+                            className="mt-2 cursor-pointer text-xs font-medium text-link hover:underline"
                         >
                             {accountsExpanded
                                 ? 'Show less'
