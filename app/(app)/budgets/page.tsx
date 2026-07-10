@@ -3,7 +3,10 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import type { PlaidPrimaryCategory } from '@/generated/prisma/enums';
 import type { BudgetProgress } from '@/lib/db/types';
-import { BUDGETABLE_CATEGORIES, formatPlaidPrimaryCategory } from '@/lib/plaid_categories';
+import {
+    BUDGETABLE_CATEGORIES,
+    formatPlaidPrimaryCategory,
+} from '@/lib/plaid_categories';
 import { formatCurrency } from '../dashboard/format';
 import { ProgressBar } from '@/app/components/ProgressBar';
 
