@@ -2,8 +2,9 @@
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    Line,
-    LineChart,
+    Area,
+    AreaChart,
+    CartesianGrid,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -52,9 +53,12 @@ export function NetWorthChart({
         setStatus('loading');
         try {
             const { from, to } = rangeForScale(currentScale);
-            const response = await axios.get('/api/analytics/net-worth/history', {
-                params: { from, to },
-            });
+            const response = await axios.get(
+                '/api/analytics/net-worth/history',
+                {
+                    params: { from, to },
+                }
+            );
             setHistory(response.data.net_worth_history ?? []);
             setStatus('ready');
         } catch {
@@ -77,7 +81,7 @@ export function NetWorthChart({
                         <CurrentNetWorthSkeleton />
                     ) : (
                         <>
-                            <p className="mt-2 font-mono text-2xl font-semibold tracking-tight tabular-nums">
+                            <p className="mt-2 font-mono text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">
                                 {formatCurrency(netWorth.net)}
                             </p>
                             <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
@@ -127,9 +131,33 @@ export function NetWorthChart({
             )}
 
             {status === 'ready' && history.length > 0 && (
-                <div className="mt-4 h-64 w-full">
+                <div className="mt-4 h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={history}>
+                        <AreaChart data={history}>
+                            <defs>
+                                <linearGradient
+                                    id="netWorthFill"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="5%"
+                                        stopColor="var(--primary)"
+                                        stopOpacity={0.32}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="var(--primary)"
+                                        stopOpacity={0}
+                                    />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid
+                                vertical={false}
+                                stroke="var(--border)"
+                            />
                             <XAxis
                                 dataKey="date"
                                 tickFormatter={(date: string) =>
@@ -138,6 +166,8 @@ export function NetWorthChart({
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
                                 className="text-muted-foreground"
+                                axisLine={false}
+                                tickLine={false}
                                 minTickGap={32}
                                 ticks={computeTicks(
                                     history.map((h) => h.date),
@@ -151,10 +181,14 @@ export function NetWorthChart({
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
                                 className="text-muted-foreground"
+                                axisLine={false}
+                                tickLine={false}
                                 width={80}
                             />
                             <Tooltip
-                                formatter={(value) => formatCurrency(Number(value))}
+                                formatter={(value) =>
+                                    formatCurrency(Number(value))
+                                }
                                 labelFormatter={(date) =>
                                     formatTooltipDate(String(date))
                                 }
@@ -165,15 +199,16 @@ export function NetWorthChart({
                                     color: 'var(--foreground)',
                                 }}
                             />
-                            <Line
+                            <Area
                                 type="monotone"
                                 dataKey="net"
                                 name="Net worth"
                                 stroke="var(--primary)"
                                 strokeWidth={2}
+                                fill="url(#netWorthFill)"
                                 dot={false}
                             />
-                        </LineChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </div>
             )}
@@ -228,4 +263,3 @@ export function NetWorthChart({
         </div>
     );
 }
-

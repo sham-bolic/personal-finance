@@ -8,7 +8,10 @@ export async function GET() {
         return Response.json({ goals }, { status: 200 });
     } catch (e) {
         console.error('Error fetching goals', e);
-        return Response.json({ error: 'Error fetching goals' }, { status: 500 });
+        return Response.json(
+            { error: 'Error fetching goals' },
+            { status: 500 }
+        );
     }
 }
 
@@ -20,12 +23,20 @@ export async function POST(request: Request) {
         return Response.json({ error: 'name is required' }, { status: 400 });
     }
     if (typeof targetAmount !== 'number' || targetAmount <= 0) {
-        return Response.json({ error: 'targetAmount must be a positive number' }, { status: 400 });
+        return Response.json(
+            { error: 'targetAmount must be a positive number' },
+            { status: 400 }
+        );
     }
 
     try {
         const user = await getCurrentUser();
-        const goal = await createGoal({ userId: user.id, name, targetAmount, targetDate });
+        const goal = await createGoal({
+            userId: user.id,
+            name,
+            targetAmount,
+            targetDate,
+        });
 
         return Response.json({ goal }, { status: 201 });
     } catch (e) {

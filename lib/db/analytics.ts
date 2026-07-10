@@ -39,7 +39,9 @@ export async function getTotalsByCategory(
         },
         _sum: { amount: true },
         _count: true,
-        orderBy: { _sum: { amount: direction === 'spending' ? 'desc' : 'asc' } },
+        orderBy: {
+            _sum: { amount: direction === 'spending' ? 'desc' : 'asc' },
+        },
     });
 
     return rows.map((r) => ({
@@ -211,12 +213,14 @@ export async function getNetWorthHistory(
         byDate.set(dateKey, totals);
     }
 
-    return Array.from(byDate.entries()).map(([date, { assets, liabilities }]) => ({
-        date,
-        assets,
-        liabilities,
-        net: assets - liabilities,
-    }));
+    return Array.from(byDate.entries()).map(
+        ([date, { assets, liabilities }]) => ({
+            date,
+            assets,
+            liabilities,
+            net: assets - liabilities,
+        })
+    );
 }
 
 // Daily spend/income plus running cumulative totals, built from Transaction

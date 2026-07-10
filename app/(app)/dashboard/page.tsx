@@ -110,14 +110,13 @@ export default function TransactionsPage() {
     }, [fetchTransactions, fetchSummary]); // run once on mount
 
     return (
-        <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
             <header className="mb-6">
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Dashboard
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Your net worth, cash flow, and recent activity at a
-                    glance.
+                    Your net worth, cash flow, and recent activity at a glance.
                 </p>
             </header>
 
@@ -144,7 +143,7 @@ export default function TransactionsPage() {
             </header>
 
             {/* Content */}
-            <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface">
                 {status === 'loading' && <TransactionsSkeleton />}
 
                 {status === 'error' && (
@@ -247,7 +246,9 @@ export default function TransactionsPage() {
                                                         />
                                                         <div className="flex flex-col">
                                                             <span className="text-foreground/90">
-                                                                {primaryCategory}
+                                                                {
+                                                                    primaryCategory
+                                                                }
                                                             </span>
                                                             {detailedCategory && (
                                                                 <span className="text-xs text-muted-foreground">
@@ -313,7 +314,7 @@ function DashboardSummary({
         return (
             <div
                 role="alert"
-                className="mb-6 rounded-xl border border-border bg-surface px-6 py-8 text-center text-sm text-muted-foreground shadow-sm"
+                className="mb-8 rounded-2xl border border-border/60 bg-surface px-6 py-8 text-center text-sm text-muted-foreground"
             >
                 We couldn&apos;t load your account summary.
             </div>
@@ -321,22 +322,26 @@ function DashboardSummary({
     }
 
     return (
-        <div className="mb-6 grid grid-cols-1 gap-4">
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
-                <NetWorthChart
-                    netWorth={netWorth}
-                    accounts={accounts}
-                    summaryStatus={status}
-                />
-            </section>
+        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="flex flex-col gap-6 lg:col-span-2">
+                <section className="rounded-2xl border border-border/60 bg-surface p-6">
+                    <NetWorthChart
+                        netWorth={netWorth}
+                        accounts={accounts}
+                        summaryStatus={status}
+                    />
+                </section>
 
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
-                <CashFlowHistoryChart />
-            </section>
+                <section className="rounded-2xl border border-border/60 bg-surface p-6">
+                    <CashFlowHistoryChart />
+                </section>
+            </div>
 
-            <section className="rounded-xl border border-border bg-surface p-4 shadow-sm sm:p-5">
-                <GoalsBudgetsWidget />
-            </section>
+            <aside className="lg:col-span-1">
+                <section className="rounded-2xl border border-border/60 bg-surface p-6 lg:sticky lg:top-8">
+                    <GoalsBudgetsWidget />
+                </section>
+            </aside>
         </div>
     );
 }

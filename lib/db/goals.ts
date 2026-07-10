@@ -1,9 +1,16 @@
 import { Goal, GoalContribution, Prisma } from '@/generated/prisma/client';
 import { prisma } from '../prisma_client';
-import type { GoalInput, GoalUpdateInput, GoalContributionInput, GoalWithProgress } from './types';
+import type {
+    GoalInput,
+    GoalUpdateInput,
+    GoalContributionInput,
+    GoalWithProgress,
+} from './types';
 
 function toDateOnly(value?: string): Date {
-    return value ? new Date(value) : new Date(new Date().toISOString().slice(0, 10));
+    return value
+        ? new Date(value)
+        : new Date(new Date().toISOString().slice(0, 10));
 }
 
 export async function createGoal(
@@ -15,7 +22,9 @@ export async function createGoal(
             userId: input.userId,
             name: input.name,
             targetAmount: input.targetAmount,
-            targetDate: input.targetDate ? toDateOnly(input.targetDate) : undefined,
+            targetDate: input.targetDate
+                ? toDateOnly(input.targetDate)
+                : undefined,
         },
     });
 }
@@ -24,7 +33,10 @@ export async function getGoalsByUser(
     userId: string,
     db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<Goal[]> {
-    return db.goal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+    return db.goal.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+    });
 }
 
 // Scoped by both id and userId, for route-level ownership checks.
@@ -120,7 +132,9 @@ function toGoalWithProgress(goal: Goal, contributed: number): GoalWithProgress {
         id: goal.id,
         name: goal.name,
         targetAmount,
-        targetDate: goal.targetDate ? goal.targetDate.toISOString().slice(0, 10) : null,
+        targetDate: goal.targetDate
+            ? goal.targetDate.toISOString().slice(0, 10)
+            : null,
         status: goal.status,
         contributed,
         remaining: targetAmount - contributed,
@@ -156,7 +170,11 @@ export async function getGoalsWithProgress(
         }),
     ]);
 
-    const contributedByGoal = new Map(sums.map((s) => [s.goalId, Number(s._sum.amount ?? 0)]));
+    const contributedByGoal = new Map(
+        sums.map((s) => [s.goalId, Number(s._sum.amount ?? 0)])
+    );
 
-    return goals.map((goal) => toGoalWithProgress(goal, contributedByGoal.get(goal.id) ?? 0));
+    return goals.map((goal) =>
+        toGoalWithProgress(goal, contributedByGoal.get(goal.id) ?? 0)
+    );
 }

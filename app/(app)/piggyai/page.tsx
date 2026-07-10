@@ -75,7 +75,7 @@ const markdownComponents: Components = {
         </a>
     ),
     code: ({ children }) => (
-        <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
+        <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
             {children}
         </code>
     ),
@@ -87,7 +87,7 @@ function TypingIndicator() {
             {[0, 1, 2].map((i) => (
                 <span
                     key={i}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-black/40 motion-reduce:animate-none dark:bg-white/40"
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground motion-reduce:animate-none"
                     style={{ animationDelay: `${i * 120}ms` }}
                 />
             ))}
@@ -97,7 +97,7 @@ function TypingIndicator() {
 
 function AssistantAvatar() {
     return (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-700/10 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <PiggyBank size={16} weight="fill" />
         </div>
     );
@@ -173,18 +173,18 @@ export default function PiggyAIPage() {
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Ask Piggy
                 </h1>
-                <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+                <p className="mt-1 text-sm text-muted-foreground">
                     Ask about your spending, cash flow, budgets, or goals.
                 </p>
             </header>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-xl border border-border p-4">
                 {messages.length === 0 && (
                     <div className="flex h-full flex-col items-center justify-center gap-4 px-2 py-8 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-700/10 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <PiggyBank size={26} weight="fill" />
                         </div>
-                        <p className="text-sm text-black/50 dark:text-white/50">
+                        <p className="text-sm text-muted-foreground">
                             Try asking Piggy one of these:
                         </p>
                         <div className="flex flex-wrap justify-center gap-2">
@@ -193,7 +193,7 @@ export default function PiggyAIPage() {
                                     key={prompt}
                                     type="button"
                                     onClick={() => submitText(prompt)}
-                                    className="cursor-pointer rounded-full border border-black/15 px-3.5 py-2 text-sm text-black/70 transition-colors hover:border-blue-700/40 hover:bg-blue-700/5 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:text-white/70 dark:hover:border-blue-400/40 dark:hover:bg-blue-400/5 dark:hover:text-blue-400"
+                                    className="cursor-pointer rounded-full border border-border px-3.5 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                                 >
                                     {prompt}
                                 </button>
@@ -226,8 +226,8 @@ export default function PiggyAIPage() {
                             <div
                                 className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
                                     message.role === 'user'
-                                        ? 'bg-blue-700 text-white'
-                                        : 'border border-black/10 dark:border-white/10'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'border border-border'
                                 }`}
                             >
                                 {message.parts.map((part, i) => {
@@ -262,7 +262,7 @@ export default function PiggyAIPage() {
                                         return (
                                             <p
                                                 key={i}
-                                                className="mt-1.5 text-xs italic text-black/40 dark:text-white/40"
+                                                className="mt-1.5 text-xs italic text-muted-foreground"
                                             >
                                                 checked{' '}
                                                 {formatToolLabel(
@@ -288,7 +288,7 @@ export default function PiggyAIPage() {
                     ) && (
                         <div className="flex items-end justify-start gap-2">
                             <AssistantAvatar />
-                            <div className="rounded-xl border border-black/10 dark:border-white/10">
+                            <div className="rounded-xl border border-border">
                                 <TypingIndicator />
                             </div>
                         </div>
@@ -297,13 +297,13 @@ export default function PiggyAIPage() {
                 {error && (
                     <div
                         role="alert"
-                        className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-negative/30 bg-negative/10 px-4 py-2.5 text-sm text-negative"
                     >
                         <span>Something went wrong.</span>
                         <button
                             type="button"
                             onClick={() => regenerate()}
-                            className="inline-flex shrink-0 cursor-pointer items-center gap-1 font-medium underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-1 font-medium underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-negative"
                         >
                             <ArrowClockwise size={14} weight="bold" />
                             Try again
@@ -333,13 +333,13 @@ export default function PiggyAIPage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Ask about your finances…"
                     aria-label="Ask about your finances"
-                    className="max-h-40 flex-1 resize-none rounded-lg border border-black/15 px-4 py-2.5 text-sm leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:bg-transparent"
+                    className="max-h-40 flex-1 resize-none rounded-lg border border-border bg-transparent px-4 py-2.5 text-sm leading-relaxed focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
                 />
                 <button
                     type="submit"
                     disabled={!input.trim() || isBusy}
                     aria-label="Send message"
-                    className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-700 text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-black/10 disabled:text-black/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:disabled:bg-white/10 dark:disabled:text-white/30"
+                    className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-foreground"
                 >
                     <PaperPlaneRight size={18} weight="fill" />
                 </button>

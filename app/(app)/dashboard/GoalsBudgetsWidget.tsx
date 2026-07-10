@@ -21,8 +21,10 @@ function topGoals(goals: GoalWithProgress[]): GoalWithProgress[] {
             }
             if (a.targetDate) return -1;
             if (b.targetDate) return 1;
-            const aPct = a.targetAmount > 0 ? a.contributed / a.targetAmount : 0;
-            const bPct = b.targetAmount > 0 ? b.contributed / b.targetAmount : 0;
+            const aPct =
+                a.targetAmount > 0 ? a.contributed / a.targetAmount : 0;
+            const bPct =
+                b.targetAmount > 0 ? b.contributed / b.targetAmount : 0;
             return bPct - aPct;
         })
         .slice(0, TOP_N);
@@ -89,7 +91,7 @@ export function GoalsBudgetsWidget() {
             )}
 
             {status === 'ready' && (
-                <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="mt-4 flex flex-col gap-6">
                     <WidgetSection
                         title="Goals"
                         href="/goals"
@@ -114,34 +116,38 @@ export function GoalsBudgetsWidget() {
                         ))}
                     </WidgetSection>
 
-                    <WidgetSection
-                        title="Budget"
-                        href="/budgets"
-                        emptyLabel="No budgets set"
-                    >
-                        {topBudgets(budgets).map((budget) => (
-                            <li
-                                key={budget.id}
-                                className="flex flex-col gap-1"
-                            >
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-foreground/90">
-                                        {formatPlaidPrimaryCategory(
-                                            budget.category
-                                        )}
-                                    </span>
-                                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                                        {formatCurrency(budget.spent)} /{' '}
-                                        {formatCurrency(budget.monthlyAmount)}
-                                    </span>
-                                </div>
-                                <ProgressBar
-                                    value={budget.spent}
-                                    max={budget.monthlyAmount}
-                                />
-                            </li>
-                        ))}
-                    </WidgetSection>
+                    <div className="border-t border-border pt-6">
+                        <WidgetSection
+                            title="Budget"
+                            href="/budgets"
+                            emptyLabel="No budgets set"
+                        >
+                            {topBudgets(budgets).map((budget) => (
+                                <li
+                                    key={budget.id}
+                                    className="flex flex-col gap-1"
+                                >
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-foreground/90">
+                                            {formatPlaidPrimaryCategory(
+                                                budget.category
+                                            )}
+                                        </span>
+                                        <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                                            {formatCurrency(budget.spent)} /{' '}
+                                            {formatCurrency(
+                                                budget.monthlyAmount
+                                            )}
+                                        </span>
+                                    </div>
+                                    <ProgressBar
+                                        value={budget.spent}
+                                        max={budget.monthlyAmount}
+                                    />
+                                </li>
+                            ))}
+                        </WidgetSection>
+                    </div>
                 </div>
             )}
         </div>
@@ -187,7 +193,7 @@ function WidgetSection({
 
 function WidgetSkeleton() {
     return (
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="mt-4 flex flex-col gap-6">
             {Array.from({ length: 2 }).map((_, i) => (
                 <div key={i} className="flex flex-col gap-3">
                     {Array.from({ length: 3 }).map((_, j) => (

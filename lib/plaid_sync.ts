@@ -93,7 +93,9 @@ export async function syncItemAllPages(
 
 async function accountMapForItem(item: PlaidItem): Promise<AccountMap> {
     const accounts = await getAccountsByItem(item.id);
-    return new Map(accounts.map((account) => [account.plaidAccountId, account.id]));
+    return new Map(
+        accounts.map((account) => [account.plaidAccountId, account.id])
+    );
 }
 
 // Sync a single item: first page synchronously, rest in the background.

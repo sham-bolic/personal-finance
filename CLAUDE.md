@@ -11,7 +11,7 @@ accounts via Plaid, transactions sync automatically, and the app surfaces net wo
 
 ## Commands
 
-```bash
+````bash
 npm run dev            # start dev server
 npm run build           # production build
 npm run lint            # eslint (flat config, eslint-config-next)
@@ -93,3 +93,4 @@ npx prisma studio                      # inspect the DB ``` There is no test sui
   from `@/generated/prisma/client`, not `@prisma/client`.
 - `DATABASE_URL` (pooled, port 6543, `pgbouncer=true`) is for runtime queries; `DIRECT_URL` (port 5432) is for
   `prisma migrate`. Get both wrong and migrations or pooled queries fail in confusing ways — see `.env.example`.
+````

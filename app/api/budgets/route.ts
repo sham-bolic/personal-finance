@@ -16,7 +16,10 @@ export async function GET(request: Request) {
         return Response.json({ budgets }, { status: 200 });
     } catch (e) {
         console.error('Error fetching budgets', e);
-        return Response.json({ error: 'Error fetching budgets' }, { status: 500 });
+        return Response.json(
+            { error: 'Error fetching budgets' },
+            { status: 500 }
+        );
     }
 }
 
@@ -28,7 +31,10 @@ export async function POST(request: Request) {
         return Response.json({ error: 'Invalid category' }, { status: 400 });
     }
     if (typeof monthlyAmount !== 'number' || monthlyAmount <= 0) {
-        return Response.json({ error: 'monthlyAmount must be a positive number' }, { status: 400 });
+        return Response.json(
+            { error: 'monthlyAmount must be a positive number' },
+            { status: 400 }
+        );
     }
 
     try {
@@ -43,6 +49,9 @@ export async function POST(request: Request) {
         return Response.json({ budget }, { status: 201 });
     } catch (e) {
         console.error('Error creating budget', e);
-        return Response.json({ error: 'Error creating budget' }, { status: 500 });
+        return Response.json(
+            { error: 'Error creating budget' },
+            { status: 500 }
+        );
     }
 }

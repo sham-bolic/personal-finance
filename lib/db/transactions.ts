@@ -1,6 +1,10 @@
 import { Prisma, Transaction } from '@/generated/prisma/client';
 import { prisma } from '../prisma_client';
-import type { TransactionInput, ListTransactionsOpts, TransactionDTO } from './types';
+import type {
+    TransactionInput,
+    ListTransactionsOpts,
+    TransactionDTO,
+} from './types';
 
 function toDateOnly(date: Date): string {
     return date.toISOString().slice(0, 10);

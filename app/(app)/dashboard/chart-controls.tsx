@@ -14,7 +14,10 @@ export function formatAxisDate(date: string, scale: TimeScale) {
     const d = parseLocalDate(date);
     if (Number.isNaN(d.getTime())) return date;
     if (scale === 'week' || scale === 'month') {
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+        });
     }
     // Full 4-digit year, not '2-digit' — "Apr 26" reads as day-26 rather than
     // year-2026 at a glance, which is exactly the ambiguity this avoids.
@@ -91,6 +94,6 @@ export function ScaleSelector({
 
 export function ChartSkeleton() {
     return (
-        <div className="mt-4 h-64 w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
+        <div className="mt-4 h-72 w-full animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
     );
 }

@@ -1,6 +1,10 @@
 import { after } from 'next/server';
 import type { PlaidItem } from '@/generated/prisma/client';
-import { getCurrentUser, getItemsByUser, snapshotAccountBalances } from '@/lib/db';
+import {
+    getCurrentUser,
+    getItemsByUser,
+    snapshotAccountBalances,
+} from '@/lib/db';
 import { syncItemAllPages, syncItemFirstPage } from '@/lib/plaid_sync';
 
 // Sync a single item: first page synchronously, rest in the background.

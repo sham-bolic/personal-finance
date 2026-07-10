@@ -14,7 +14,9 @@ export async function getCurrentUser(): Promise<User> {
         throw err;
     }
 
-    const existing = await prisma.user.findUnique({ where: { id: authUser.id } });
+    const existing = await prisma.user.findUnique({
+        where: { id: authUser.id },
+    });
     if (existing) return existing;
 
     // Fallback in case the auth.users sync trigger hasn't fired yet (e.g.

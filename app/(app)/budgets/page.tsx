@@ -153,9 +153,7 @@ function SetBudgetForm({
                     id="budget-category"
                     value={category}
                     onChange={(e) =>
-                        setCategory(
-                            e.target.value as PlaidPrimaryCategory | ''
-                        )
+                        setCategory(e.target.value as PlaidPrimaryCategory | '')
                     }
                     className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >

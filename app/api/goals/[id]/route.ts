@@ -1,4 +1,9 @@
-import { getCurrentUser, getGoalWithProgress, updateGoal, deleteGoal } from '@/lib/db';
+import {
+    getCurrentUser,
+    getGoalWithProgress,
+    updateGoal,
+    deleteGoal,
+} from '@/lib/db';
 
 export async function GET(
     request: Request,

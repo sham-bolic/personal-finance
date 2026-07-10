@@ -20,7 +20,10 @@ export default function LoginPage() {
         setError(null);
         setPending(true);
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
 
         setPending(false);
         if (error) {
@@ -84,7 +87,10 @@ export default function LoginPage() {
 
                 <p className="mt-6 text-sm text-black/60 dark:text-white/60">
                     Don&apos;t have an account?{' '}
-                    <Link href="/signup" className="font-medium text-black underline dark:text-white">
+                    <Link
+                        href="/signup"
+                        className="font-medium text-black underline dark:text-white"
+                    >
                         Sign up
                     </Link>
                 </p>

@@ -3,7 +3,11 @@ type FormFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
     label: string;
 };
 
-export default function FormField({ id, label, ...inputProps }: FormFieldProps) {
+export default function FormField({
+    id,
+    label,
+    ...inputProps
+}: FormFieldProps) {
     return (
         <div>
             <label htmlFor={id} className="text-sm font-medium">

@@ -1,10 +1,16 @@
-import { Budget, Prisma, PlaidPrimaryCategory } from '@/generated/prisma/client';
+import {
+    Budget,
+    Prisma,
+    PlaidPrimaryCategory,
+} from '@/generated/prisma/client';
 import { prisma } from '../prisma_client';
 import type { BudgetInput, BudgetProgress } from './types';
 import { getTotalsByCategory } from './analytics';
 
 function toDateOnly(value?: string): Date {
-    return value ? new Date(value) : new Date(new Date().toISOString().slice(0, 10));
+    return value
+        ? new Date(value)
+        : new Date(new Date().toISOString().slice(0, 10));
 }
 
 /**
@@ -86,12 +92,18 @@ export async function getBudgetProgress(
     db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<BudgetProgress[]> {
     const [year, monthNum] = month.split('-').map(Number);
-    const from = new Date(Date.UTC(year, monthNum - 1, 1)).toISOString().slice(0, 10);
+    const from = new Date(Date.UTC(year, monthNum - 1, 1))
+        .toISOString()
+        .slice(0, 10);
     const to = new Date(Date.UTC(year, monthNum, 0)).toISOString().slice(0, 10);
 
     const [budgets, totals] = await Promise.all([
         getBudgetsByUser(userId, to, db),
-        getTotalsByCategory(userId, { from, to, direction: 'spending', groupBy: 'pfcPrimary' }, db),
+        getTotalsByCategory(
+            userId,
+            { from, to, direction: 'spending', groupBy: 'pfcPrimary' },
+            db
+        ),
     ]);
 
     const spentByCategory = new Map(totals.map((t) => [t.category, t.total]));

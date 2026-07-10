@@ -1,4 +1,9 @@
-import { getCurrentUser, getGoalById, listGoalContributions, addGoalContribution } from '@/lib/db';
+import {
+    getCurrentUser,
+    getGoalById,
+    listGoalContributions,
+    addGoalContribution,
+} from '@/lib/db';
 
 export async function GET(
     request: Request,
@@ -17,7 +22,10 @@ export async function GET(
         return Response.json({ contributions }, { status: 200 });
     } catch (e) {
         console.error('Error fetching goal contributions', e);
-        return Response.json({ error: 'Error fetching goal contributions' }, { status: 500 });
+        return Response.json(
+            { error: 'Error fetching goal contributions' },
+            { status: 500 }
+        );
     }
 }
 
@@ -30,7 +38,10 @@ export async function POST(
     const { amount, date, note } = body;
 
     if (typeof amount !== 'number' || amount <= 0) {
-        return Response.json({ error: 'amount must be a positive number' }, { status: 400 });
+        return Response.json(
+            { error: 'amount must be a positive number' },
+            { status: 400 }
+        );
     }
 
     try {
@@ -40,10 +51,18 @@ export async function POST(
             return Response.json({ error: 'Goal not found' }, { status: 404 });
         }
 
-        const contribution = await addGoalContribution({ goalId: id, amount, date, note });
+        const contribution = await addGoalContribution({
+            goalId: id,
+            amount,
+            date,
+            note,
+        });
         return Response.json({ contribution }, { status: 201 });
     } catch (e) {
         console.error('Error adding goal contribution', e);
-        return Response.json({ error: 'Error adding goal contribution' }, { status: 500 });
+        return Response.json(
+            { error: 'Error adding goal contribution' },
+            { status: 500 }
+        );
     }
 }

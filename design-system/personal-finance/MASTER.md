@@ -21,21 +21,21 @@ swapped per-mode via `@media (prefers-color-scheme: dark)`, and exposed as Tailw
 utilities through `@theme inline` (e.g. `bg-surface`, `text-muted-foreground`,
 `border-border`, `bg-primary`, `text-positive`, `text-negative`, `text-warning`, `text-link`).
 
-| Role | Light | Dark | CSS Variable |
-|------|-------|------|--------------|
-| Background (page) | `#f8fafc` | `#0b1220` | `--background` |
-| Foreground (text) | `#0f172a` | `#f1f5f9` | `--foreground` |
-| Surface (cards) | `#ffffff` | `#131c30` | `--surface` |
-| Surface hover | `#f1f5f9` | `#1b2540` | `--surface-hover` |
-| Muted (tracks/skeletons) | `#f1f5f9` | `#1b2540` | `--muted` |
-| Muted foreground | `#64748b` | `#94a3b8` | `--muted-foreground` |
-| Border | `#e2e8f0` | `rgba(255,255,255,0.08)` | `--border` |
-| Primary (buttons/active) | `#2563eb` | `#2563eb` | `--primary` |
-| Primary hover | `#1d4ed8` | `#3b82f6` | `--primary-hover` |
-| Link/accent text | `#1d4ed8` | `#60a5fa` | `--link` |
-| Positive (inflow/success) | `#047857` | `#34d399` | `--positive` |
-| Negative (destructive/over-budget) | `#dc2626` | `#f87171` | `--negative` |
-| Warning (budget near limit) | `#b45309` | `#fbbf24` | `--warning` |
+| Role                               | Light     | Dark                     | CSS Variable         |
+| ---------------------------------- | --------- | ------------------------ | -------------------- |
+| Background (page)                  | `#f8fafc` | `#0b1220`                | `--background`       |
+| Foreground (text)                  | `#0f172a` | `#f1f5f9`                | `--foreground`       |
+| Surface (cards)                    | `#ffffff` | `#131c30`                | `--surface`          |
+| Surface hover                      | `#f1f5f9` | `#1b2540`                | `--surface-hover`    |
+| Muted (tracks/skeletons)           | `#f1f5f9` | `#1b2540`                | `--muted`            |
+| Muted foreground                   | `#64748b` | `#94a3b8`                | `--muted-foreground` |
+| Border                             | `#e2e8f0` | `rgba(255,255,255,0.08)` | `--border`           |
+| Primary (buttons/active)           | `#2563eb` | `#2563eb`                | `--primary`          |
+| Primary hover                      | `#1d4ed8` | `#3b82f6`                | `--primary-hover`    |
+| Link/accent text                   | `#1d4ed8` | `#60a5fa`                | `--link`             |
+| Positive (inflow/success)          | `#047857` | `#34d399`                | `--positive`         |
+| Negative (destructive/over-budget) | `#dc2626` | `#f87171`                | `--negative`         |
+| Warning (budget near limit)        | `#b45309` | `#fbbf24`                | `--warning`          |
 
 All text-color pairings were picked to clear WCAG AA (4.5:1) against their
 background in both modes (e.g. `emerald-700` not `emerald-600` for light-mode

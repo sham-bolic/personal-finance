@@ -6,13 +6,17 @@ import { PlaidPrimaryCategory } from '@/generated/prisma/enums';
 // picker.
 export const BUDGETABLE_CATEGORIES = Object.values(PlaidPrimaryCategory)
     .filter((category) => category !== 'INCOME' && category !== 'TRANSFER_IN')
-    .sort((a, b) => formatPlaidCategory(a)!.localeCompare(formatPlaidCategory(b)!));
+    .sort((a, b) =>
+        formatPlaidCategory(a)!.localeCompare(formatPlaidCategory(b)!)
+    );
 
 // Plaid's personal_finance_category values are SCREAMING_SNAKE_CASE.
 // Shared by free-form Transaction.pfcPrimary/pfcDetailed strings and the
 // PlaidPrimaryCategory enum, so there's one formatting rule, not a
 // hand-maintained label per enum value.
-export function formatPlaidCategory(value: string | null | undefined): string | null {
+export function formatPlaidCategory(
+    value: string | null | undefined
+): string | null {
     if (!value) return null;
     return value
         .toLowerCase()
@@ -21,6 +25,8 @@ export function formatPlaidCategory(value: string | null | undefined): string | 
         .join(' ');
 }
 
-export function formatPlaidPrimaryCategory(category: PlaidPrimaryCategory): string {
+export function formatPlaidPrimaryCategory(
+    category: PlaidPrimaryCategory
+): string {
     return formatPlaidCategory(category)!;
 }

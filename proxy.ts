@@ -9,8 +9,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-    const isAuthPage = AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix)
+    );
+    const isAuthPage = AUTH_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix)
+    );
     if (!isProtected && !isAuthPage) return NextResponse.next();
 
     let response = NextResponse.next({ request });
@@ -21,10 +25,12 @@ export async function proxy(request: NextRequest) {
                 return request.cookies.getAll();
             },
             setAll(cookiesToSet) {
-                cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+                cookiesToSet.forEach(({ name, value }) =>
+                    request.cookies.set(name, value)
+                );
                 response = NextResponse.next({ request });
                 cookiesToSet.forEach(({ name, value, options }) =>
-                    response.cookies.set(name, value, options),
+                    response.cookies.set(name, value, options)
                 );
             },
         },
