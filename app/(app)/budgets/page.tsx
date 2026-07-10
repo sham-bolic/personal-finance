@@ -34,13 +34,13 @@ export default function BudgetsPage() {
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Budget
                 </h1>
-                <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+                <p className="mt-1 text-sm text-muted-foreground">
                     Monthly spending limits by category.
                 </p>
             </header>
 
-            <section className="mb-8 rounded-xl border border-black/10 p-5 dark:border-white/10">
-                <h2 className="mb-3 text-sm font-medium text-black/60 dark:text-white/60">
+            <section className="mb-8 rounded-xl border border-border bg-surface p-5 shadow-sm">
+                <h2 className="mb-3 text-sm font-medium text-muted-foreground">
                     Set budget
                 </h2>
                 <SetBudgetForm
@@ -54,15 +54,15 @@ export default function BudgetsPage() {
             {status === 'error' && (
                 <div
                     role="alert"
-                    className="flex flex-col items-center gap-3 rounded-xl border border-black/10 px-6 py-16 text-center dark:border-white/10"
+                    className="flex flex-col items-center gap-3 rounded-xl border border-border bg-surface px-6 py-16 text-center shadow-sm"
                 >
-                    <p className="text-sm text-black/70 dark:text-white/70">
+                    <p className="text-sm text-muted-foreground">
                         We couldn&apos;t load your budgets.
                     </p>
                     <button
                         type="button"
                         onClick={fetchBudgets}
-                        className="cursor-pointer rounded-lg border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:hover:bg-white/5"
+                        className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                         Try again
                     </button>
@@ -70,9 +70,9 @@ export default function BudgetsPage() {
             )}
 
             {status === 'ready' && budgets.length === 0 && (
-                <div className="flex flex-col items-center gap-1 rounded-xl border border-black/10 px-6 py-16 text-center dark:border-white/10">
+                <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-surface px-6 py-16 text-center shadow-sm">
                     <p className="text-sm font-medium">No budgets set</p>
-                    <p className="text-sm text-black/60 dark:text-white/60">
+                    <p className="text-sm text-muted-foreground">
                         Set one above to start tracking this month&apos;s
                         spending.
                     </p>
@@ -145,7 +145,7 @@ function SetBudgetForm({
             <div className="flex flex-1 min-w-48 flex-col gap-1">
                 <label
                     htmlFor="budget-category"
-                    className="text-xs font-medium text-black/60 dark:text-white/60"
+                    className="text-xs font-medium text-muted-foreground"
                 >
                     Category
                 </label>
@@ -157,7 +157,7 @@ function SetBudgetForm({
                             e.target.value as PlaidPrimaryCategory | ''
                         )
                     }
-                    className="rounded-lg border border-black/15 bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15"
+                    className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                     <option value="" disabled>
                         Select category
@@ -172,7 +172,7 @@ function SetBudgetForm({
             <div className="flex w-36 flex-col gap-1">
                 <label
                     htmlFor="budget-amount"
-                    className="text-xs font-medium text-black/60 dark:text-white/60"
+                    className="text-xs font-medium text-muted-foreground"
                 >
                     Monthly amount
                 </label>
@@ -184,13 +184,13 @@ function SetBudgetForm({
                     value={monthlyAmount}
                     onChange={(e) => setMonthlyAmount(e.target.value)}
                     placeholder="500"
-                    className="rounded-lg border border-black/15 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:bg-transparent"
+                    className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 />
             </div>
             <button
                 type="submit"
                 disabled={submitting}
-                className="cursor-pointer rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {submitting
                     ? 'Saving…'
@@ -199,7 +199,7 @@ function SetBudgetForm({
                       : 'Create budget'}
             </button>
             {error && (
-                <p className="w-full text-sm text-red-600 dark:text-red-400">
+                <p role="alert" className="w-full text-sm text-negative">
                     {error}
                 </p>
             )}
@@ -233,7 +233,7 @@ function BudgetCard({
     };
 
     return (
-        <section className="rounded-xl border border-black/10 p-5 dark:border-white/10">
+        <section className="rounded-xl border border-border bg-surface p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
                 <h3 className="font-medium">
                     {formatPlaidPrimaryCategory(budget.category)}
@@ -242,7 +242,7 @@ function BudgetCard({
                     type="button"
                     onClick={handleDelete}
                     disabled={busy}
-                    className="cursor-pointer rounded-lg border border-black/15 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:text-red-400 dark:hover:bg-red-500/10"
+                    className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-negative transition-colors hover:bg-negative/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     Delete
                 </button>
@@ -250,16 +250,16 @@ function BudgetCard({
 
             <div className="mt-4">
                 <ProgressBar value={budget.spent} max={budget.monthlyAmount} />
-                <div className="mt-2 flex flex-wrap gap-4 text-xs text-black/60 dark:text-white/60">
+                <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>
                         Spent{' '}
-                        <span className="font-medium text-black/80 dark:text-white/80">
+                        <span className="font-medium text-foreground/90">
                             {formatCurrency(budget.spent)}
                         </span>
                     </span>
                     <span>
                         Limit{' '}
-                        <span className="font-medium text-black/80 dark:text-white/80">
+                        <span className="font-medium text-foreground/90">
                             {formatCurrency(budget.monthlyAmount)}
                         </span>
                     </span>
@@ -287,10 +287,10 @@ function BudgetsSkeleton() {
             {Array.from({ length: 4 }).map((_, i) => (
                 <div
                     key={i}
-                    className="rounded-xl border border-black/10 p-5 dark:border-white/10"
+                    className="rounded-xl border border-border bg-surface p-5 shadow-sm"
                 >
-                    <div className="h-4 w-32 animate-pulse rounded bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
-                    <div className="mt-4 h-2 w-full animate-pulse rounded-full bg-black/10 motion-reduce:animate-none dark:bg-white/10" />
+                    <div className="h-4 w-32 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="mt-4 h-2 w-full animate-pulse rounded-full bg-muted motion-reduce:animate-none" />
                 </div>
             ))}
         </div>

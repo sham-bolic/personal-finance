@@ -49,7 +49,7 @@ export function CashFlowHistoryChart() {
     return (
         <div>
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-sm font-medium text-black/60 dark:text-white/60">
+                <h2 className="text-sm font-medium text-muted-foreground">
                     Cumulative Income vs. Spend
                 </h2>
                 <ScaleSelector scale={scale} onChange={setScale} />
@@ -68,7 +68,7 @@ export function CashFlowHistoryChart() {
                     <button
                         type="button"
                         onClick={() => fetchHistory(scale)}
-                        className="cursor-pointer rounded-lg border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 dark:border-white/15 dark:hover:bg-white/5"
+                        className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                         Try again
                     </button>
@@ -76,7 +76,7 @@ export function CashFlowHistoryChart() {
             )}
 
             {status === 'ready' && history.length === 0 && (
-                <p className="mt-6 py-10 text-center text-sm text-black/60 dark:text-white/60">
+                <p className="mt-6 py-10 text-center text-sm text-muted-foreground">
                     No transactions in this range yet.
                 </p>
             )}
@@ -92,7 +92,7 @@ export function CashFlowHistoryChart() {
                                 }
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
-                                className="text-black/40 dark:text-white/40"
+                                className="text-muted-foreground"
                                 minTickGap={32}
                                 ticks={computeTicks(
                                     history.map((h) => h.date),
@@ -105,7 +105,7 @@ export function CashFlowHistoryChart() {
                                 }
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
-                                className="text-black/40 dark:text-white/40"
+                                className="text-muted-foreground"
                                 width={80}
                             />
                             <Tooltip
@@ -113,6 +113,12 @@ export function CashFlowHistoryChart() {
                                 labelFormatter={(date) =>
                                     formatTooltipDate(String(date))
                                 }
+                                contentStyle={{
+                                    background: 'var(--surface)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '0.5rem',
+                                    color: 'var(--foreground)',
+                                }}
                             />
                             <Legend
                                 wrapperStyle={{ fontSize: 12 }}
@@ -122,7 +128,7 @@ export function CashFlowHistoryChart() {
                                 type="monotone"
                                 dataKey="cumulativeIncome"
                                 name="Income"
-                                stroke="#059669"
+                                stroke="var(--positive)"
                                 strokeWidth={2}
                                 dot={false}
                             />
@@ -130,7 +136,7 @@ export function CashFlowHistoryChart() {
                                 type="monotone"
                                 dataKey="cumulativeSpend"
                                 name="Spend"
-                                stroke="#dc2626"
+                                stroke="var(--negative)"
                                 strokeWidth={2}
                                 dot={false}
                             />
