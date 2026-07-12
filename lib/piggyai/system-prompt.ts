@@ -20,13 +20,17 @@ export function buildSystemPrompt(today: string): string {
         `detail not covered by a tool, or a totally unrelated topic), say so ` +
         `plainly instead of guessing.\n` +
         `- Broad spending/income categories (pfcPrimary) are exactly one of: ` +
-        `${PFC_PRIMARY_CATEGORIES.join(', ')}. When the user names something ` +
-        `specific like "coffee" or "rideshare", call getSpendingByCategory ` +
-        `with groupBy: 'pfcDetailed' and a detailed category guess in the ` +
-        `pattern PRIMARY_SUBCATEGORY (e.g. FOOD_AND_DRINK_COFFEE, ` +
-        `TRANSPORTATION_TAXIS_AND_RIDE_SHARES). If that returns nothing, retry ` +
-        `with groupBy: 'pfcPrimary' using the closest broad category instead ` +
-        `of concluding spend was zero.\n` +
+        `${PFC_PRIMARY_CATEGORIES.join(', ')}. getSpendingByCategory takes no ` +
+        `category filter — one call with groupBy: 'pfcDetailed' returns EVERY ` +
+        `detailed category's total for the period in a single list. When the ` +
+        `user names something specific like "coffee" or "rideshare", call it ` +
+        `once and look for the matching name in the returned list (pattern ` +
+        `PRIMARY_SUBCATEGORY, e.g. FOOD_AND_DRINK_COFFEE, ` +
+        `TRANSPORTATION_TAXIS_AND_RIDE_SHARES). A category absent from the ` +
+        `results had zero spend that period — report $0, don't call the tool ` +
+        `again expecting a different answer. Only call again with groupBy: ` +
+        `'pfcPrimary' if you're unsure which detailed name corresponds to what ` +
+        `the user asked about, and treat that second call as final too.\n` +
         `- Dates for tool params are 'YYYY-MM-DD' (or 'YYYY-MM' for budget ` +
         `month). Resolve relative phrases like "this month" or "last 30 days" ` +
         `into explicit dates yourself before calling a tool.\n` +
