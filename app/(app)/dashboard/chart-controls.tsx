@@ -1,3 +1,4 @@
+import { useCallback, useSyncExternalStore } from 'react';
 import { TIME_SCALES, TimeScale } from './time-range';
 
 // Dates arrive as plain 'YYYY-MM-DD' with no time component. `new Date(date)`
@@ -76,6 +77,60 @@ export function computeTicks(
         }
     }
     return ticks;
+}
+
+// localStorage is read via useSyncExternalStore rather than mirrored into
+// useState, matching the ThemeToggle pattern: getServerSnapshot always
+// returns defaultScale (avoiding a hydration mismatch), and the hook
+// re-syncs to the persisted value right after hydration. A same-tab custom
+// event stands in for the 'storage' event, which only fires in other tabs.
+function persistedScaleChangedEvent(storageKey: string) {
+    return `persisted-scale-changed:${storageKey}`;
+}
+
+export function usePersistedScale(
+    storageKey: string,
+    defaultScale: TimeScale = 'month'
+): [TimeScale, (scale: TimeScale) => void] {
+    const subscribe = useCallback(
+        (callback: () => void) => {
+            const eventName = persistedScaleChangedEvent(storageKey);
+            window.addEventListener('storage', callback);
+            window.addEventListener(eventName, callback);
+            return () => {
+                window.removeEventListener('storage', callback);
+                window.removeEventListener(eventName, callback);
+            };
+        },
+        [storageKey]
+    );
+
+    const getSnapshot = useCallback((): TimeScale => {
+        const stored = localStorage.getItem(storageKey);
+        return TIME_SCALES.some((s) => s.value === stored)
+            ? (stored as TimeScale)
+            : defaultScale;
+    }, [storageKey, defaultScale]);
+
+    const getServerSnapshot = useCallback(() => defaultScale, [defaultScale]);
+
+    const scale = useSyncExternalStore(
+        subscribe,
+        getSnapshot,
+        getServerSnapshot
+    );
+
+    const setScale = useCallback(
+        (next: TimeScale) => {
+            localStorage.setItem(storageKey, next);
+            window.dispatchEvent(
+                new Event(persistedScaleChangedEvent(storageKey))
+            );
+        },
+        [storageKey]
+    );
+
+    return [scale, setScale];
 }
 
 export function ScaleSelector({

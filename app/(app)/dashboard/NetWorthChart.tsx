@@ -21,6 +21,7 @@ import {
     formatAxisDate,
     formatTooltipDate,
     ScaleSelector,
+    usePersistedScale,
 } from './chart-controls';
 import type { AccountDTO } from './types';
 
@@ -44,7 +45,7 @@ export function NetWorthChart({
     accounts: AccountDTO[];
     summaryStatus: 'loading' | 'ready' | 'error';
 }) {
-    const [scale, setScale] = useState<TimeScale>('month');
+    const [scale, setScale] = usePersistedScale('dashboard:netWorthScale');
     const [history, setHistory] = useState<NetWorthHistoryPoint[]>([]);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading'

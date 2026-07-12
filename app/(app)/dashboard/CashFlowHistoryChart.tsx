@@ -22,10 +22,11 @@ import {
     formatAxisDate,
     formatTooltipDate,
     ScaleSelector,
+    usePersistedScale,
 } from './chart-controls';
 
 export function CashFlowHistoryChart() {
-    const [scale, setScale] = useState<TimeScale>('month');
+    const [scale, setScale] = usePersistedScale('dashboard:cashFlowScale');
     const [history, setHistory] = useState<CashFlowHistoryPoint[]>([]);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading'
