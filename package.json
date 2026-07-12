@@ -10,7 +10,6 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "seed:dev": "tsx scripts/seed-dev-user.ts",
-        "eval:piggyai": "tsx scripts/piggyai-eval.ts"
     },
     "dependencies": {
         "@ai-sdk/groq": "^4.0.8",
