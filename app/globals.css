@@ -84,3 +84,79 @@ body {
     color: var(--foreground);
     font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* PiggyAI chat: word-by-word reveal for streaming assistant text, a soft
+   entrance for new message bubbles, and a pulse for in-flight tool chips.
+   Each has a reduced-motion fallback since they're purely decorative. */
+@keyframes piggyai-word-in {
+    from {
+        opacity: 0;
+        filter: blur(2px);
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0);
+    }
+}
+
+@keyframes piggyai-message-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes piggyai-cursor-blink {
+    0%,
+    50% {
+        opacity: 1;
+    }
+    50.01%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes piggyai-chip-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+
+.animate-piggyai-word-in {
+    animation: piggyai-word-in 260ms ease-out both;
+}
+
+.animate-piggyai-message-in {
+    animation: piggyai-message-in 220ms ease-out both;
+}
+
+.animate-piggyai-cursor {
+    animation: piggyai-cursor-blink 1s step-end infinite;
+}
+
+.animate-piggyai-chip-pulse {
+    animation: piggyai-chip-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-piggyai-word-in,
+    .animate-piggyai-message-in,
+    .animate-piggyai-chip-pulse {
+        animation: none;
+    }
+    .animate-piggyai-cursor {
+        animation: none;
+        opacity: 0.6;
+    }
+}
