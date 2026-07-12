@@ -5,14 +5,21 @@ import { TIME_SCALES, TimeScale } from './time-range';
 // timezone (anything west of UTC) rolls it back a day. Build the Date from
 // local year/month/day parts instead, so the calendar date matches what's
 // actually in the data regardless of timezone.
-function parseLocalDate(date: string): Date {
+export function parseLocalDate(date: string): Date {
     const [year, month, day] = date.split('-').map(Number);
     return new Date(year, month - 1, day);
 }
 
-export function formatAxisDate(date: string, scale: TimeScale) {
-    const d = parseLocalDate(date);
-    if (Number.isNaN(d.getTime())) return date;
+// The x-axis plots real elapsed time (see NetWorthChart/CashFlowHistoryChart),
+// which needs a numeric domain — this is the single place a 'YYYY-MM-DD'
+// string becomes the timestamp that domain is built from.
+export function dateToTimestamp(date: string): number {
+    return parseLocalDate(date).getTime();
+}
+
+export function formatAxisDate(ts: number, scale: TimeScale) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '';
     if (scale === 'week' || scale === 'month') {
         return d.toLocaleDateString('en-US', {
             month: 'short',
@@ -25,12 +32,12 @@ export function formatAxisDate(date: string, scale: TimeScale) {
 }
 
 // Axis ticks abbreviate to month+year at Year/5Y scale to avoid clutter, but
-// the tooltip should always show the exact date being hovered regardless of
-// scale — otherwise every point in the same month reads as "Apr 26" (April
-// 2026), no day at all.
-export function formatTooltipDate(date: string) {
-    const d = parseLocalDate(date);
-    if (Number.isNaN(d.getTime())) return date;
+// the hover readout should always show the exact date regardless of scale —
+// otherwise every point in the same month reads as "Apr 26" (April 2026), no
+// day at all.
+export function formatTooltipDate(ts: number) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '';
     return d.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -38,28 +45,34 @@ export function formatTooltipDate(date: string) {
     });
 }
 
-// Recharts' category axis auto-picks tick positions by evenly spacing array
-// indices, not calendar boundaries. At 'year'/'5year' scale — where
-// formatAxisDate only shows month+year, no day — index-based spacing can
-// place several ticks inside the same month, rendering the identical label
-// multiple times in a row. Pick one representative date per calendar bucket
-// instead, so every rendered tick is visually distinct.
+// The x-axis is a true time scale (see NetWorthChart/CashFlowHistoryChart),
+// so ticks can land on any calendar boundary — they no longer have to match
+// a date that actually exists in the (possibly sparse) dataset. At
+// 'year'/'5year' scale, where formatAxisDate only shows month+year, picking
+// one tick per calendar month/year keeps every rendered label distinct
+// instead of letting the axis's auto-spacing repeat the same label.
 export function computeTicks(
-    dates: string[],
-    scale: TimeScale
-): string[] | undefined {
+    scale: TimeScale,
+    from: string,
+    to: string
+): number[] | undefined {
     if (scale === 'week' || scale === 'month') return undefined; // day-level labels are already unique
 
-    const bucketOf = (date: string) =>
-        scale === 'year' ? date.slice(0, 7) : date.slice(0, 4); // YYYY-MM or YYYY
+    const start = parseLocalDate(from);
+    const end = parseLocalDate(to);
+    const ticks: number[] = [];
 
-    const seen = new Set<string>();
-    const ticks: string[] = [];
-    for (const date of dates) {
-        const bucket = bucketOf(date);
-        if (!seen.has(bucket)) {
-            seen.add(bucket);
-            ticks.push(date);
+    if (scale === 'year') {
+        const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (cursor <= end) {
+            ticks.push(cursor.getTime());
+            cursor.setMonth(cursor.getMonth() + 1);
+        }
+    } else {
+        const cursor = new Date(start.getFullYear(), 0, 1);
+        while (cursor <= end) {
+            ticks.push(cursor.getTime());
+            cursor.setFullYear(cursor.getFullYear() + 1);
         }
     }
     return ticks;

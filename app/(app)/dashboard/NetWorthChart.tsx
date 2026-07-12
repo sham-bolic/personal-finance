@@ -1,6 +1,6 @@
 'use client';
 import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Area,
     AreaChart,
@@ -9,6 +9,7 @@ import {
     Tooltip,
     XAxis,
     YAxis,
+    type MouseHandlerDataParam,
 } from 'recharts';
 import type { NetWorth, NetWorthHistoryPoint } from '@/lib/db/types';
 import { formatCurrency } from './format';
@@ -16,6 +17,7 @@ import { rangeForScale, TimeScale } from './time-range';
 import {
     ChartSkeleton,
     computeTicks,
+    dateToTimestamp,
     formatAxisDate,
     formatTooltipDate,
     ScaleSelector,
@@ -48,9 +50,29 @@ export function NetWorthChart({
         'loading'
     );
     const [accountsExpanded, setAccountsExpanded] = useState(false);
+    const [hover, setHover] = useState<{ index: number; x: number } | null>(
+        null
+    );
+
+    const { from: rangeFrom, to: rangeTo } = rangeForScale(scale);
+
+    const chartData = useMemo(
+        () => history.map((h) => ({ ...h, ts: dateToTimestamp(h.date) })),
+        [history]
+    );
+    const activePoint = hover ? chartData[hover.index] : null;
+
+    const handleHover = useCallback((state: MouseHandlerDataParam) => {
+        const index = Number(state.activeTooltipIndex);
+        if (!Number.isNaN(index) && state.activeCoordinate) {
+            setHover({ index, x: state.activeCoordinate.x });
+        }
+    }, []);
+    const handleHoverEnd = useCallback(() => setHover(null), []);
 
     const fetchHistory = useCallback(async (currentScale: TimeScale) => {
         setStatus('loading');
+        setHover(null);
         try {
             const { from, to } = rangeForScale(currentScale);
             const response = await axios.get(
@@ -131,9 +153,26 @@ export function NetWorthChart({
             )}
 
             {status === 'ready' && history.length > 0 && (
-                <div className="mt-4 h-72 w-full">
+                <div className="relative mt-4 h-72 w-full">
+                    {hover && activePoint && (
+                        <div
+                            className="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-md border border-border bg-surface px-2 py-1 text-center shadow-sm"
+                            style={{ left: hover.x }}
+                        >
+                            <p className="text-[10px] whitespace-nowrap text-muted-foreground">
+                                {formatTooltipDate(activePoint.ts)}
+                            </p>
+                            <p className="font-mono text-xs font-medium whitespace-nowrap tabular-nums">
+                                {formatCurrency(activePoint.net)}
+                            </p>
+                        </div>
+                    )}
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={history}>
+                        <AreaChart
+                            data={chartData}
+                            onMouseMove={handleHover}
+                            onMouseLeave={handleHoverEnd}
+                        >
                             <defs>
                                 <linearGradient
                                     id="netWorthFill"
@@ -159,9 +198,12 @@ export function NetWorthChart({
                                 stroke="var(--border)"
                             />
                             <XAxis
-                                dataKey="date"
-                                tickFormatter={(date: string) =>
-                                    formatAxisDate(date, scale)
+                                dataKey="ts"
+                                type="number"
+                                scale="time"
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={(ts: number) =>
+                                    formatAxisDate(ts, scale)
                                 }
                                 tick={{ fontSize: 12 }}
                                 stroke="currentColor"
@@ -169,10 +211,7 @@ export function NetWorthChart({
                                 axisLine={false}
                                 tickLine={false}
                                 minTickGap={32}
-                                ticks={computeTicks(
-                                    history.map((h) => h.date),
-                                    scale
-                                )}
+                                ticks={computeTicks(scale, rangeFrom, rangeTo)}
                             />
                             <YAxis
                                 tickFormatter={(value: number) =>
@@ -186,18 +225,8 @@ export function NetWorthChart({
                                 width={80}
                             />
                             <Tooltip
-                                formatter={(value) =>
-                                    formatCurrency(Number(value))
-                                }
-                                labelFormatter={(date) =>
-                                    formatTooltipDate(String(date))
-                                }
-                                contentStyle={{
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '0.5rem',
-                                    color: 'var(--foreground)',
-                                }}
+                                content={() => null}
+                                cursor={{ stroke: 'var(--border)' }}
                             />
                             <Area
                                 type="monotone"
@@ -207,6 +236,7 @@ export function NetWorthChart({
                                 strokeWidth={2}
                                 fill="url(#netWorthFill)"
                                 dot={false}
+                                isAnimationActive={false}
                             />
                         </AreaChart>
                     </ResponsiveContainer>
