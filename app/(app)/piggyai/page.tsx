@@ -12,8 +12,11 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
     ArrowClockwise,
+    CheckCircle,
+    CircleNotch,
     PaperPlaneRight,
     PiggyBank,
+    XCircle,
 } from '@phosphor-icons/react';
 import { loadChatHistory, saveChatHistory } from '@/lib/piggyai/local-storage';
 
@@ -34,16 +37,16 @@ function formatToolLabel(toolName: string) {
 }
 
 // The assistant message shell appears (role: 'assistant') as soon as the
-// model starts a turn, but reasoning and in-flight tool calls render as
-// nothing in the transcript below — so checking role alone hides the
-// typing indicator during that gap, before any text or "checked X" line
-// is actually on screen.
+// model starts a turn, but reasoning renders as nothing in the transcript
+// below — so checking role alone hides the typing indicator during that
+// gap, before a tool chip or text is actually on screen. Tool parts count
+// as visible in any state (not just 'output-available') since a running
+// tool now renders its own "checking..." chip, which replaces the generic
+// typing indicator as the progress cue.
 function hasVisibleContent(message: UIMessage) {
     return message.parts.some((part) => {
         if (part.type === 'text') return part.text.trim().length > 0;
-        if (part.type.startsWith('tool-') && 'state' in part) {
-            return part.state === 'output-available';
-        }
+        if (part.type.startsWith('tool-') && 'state' in part) return true;
         return false;
     });
 }
@@ -80,6 +83,87 @@ const markdownComponents: Components = {
         </code>
     ),
 };
+
+// Narrows a message part to the shape tool-call parts share (type prefixed
+// 'tool-', plus a 'state'/'errorText' pair) without importing the SDK's
+// generic ToolUIPart type, which is parameterized per-tool.
+type ToolPart = Extract<UIMessage['parts'][number], { type: `tool-${string}` }>;
+
+function isToolPart(part: UIMessage['parts'][number]): part is ToolPart {
+    return part.type.startsWith('tool-') && 'state' in part;
+}
+
+// Tool calls get their own pill so the "what Piggy checked" trail reads as
+// a distinct activity log, not another line of prose crammed into the reply.
+function ToolCallChip({ part }: { part: ToolPart }) {
+    const label = formatToolLabel(part.type.replace('tool-', ''));
+
+    if (part.state === 'output-error') {
+        return (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-negative/30 bg-negative/10 px-2.5 py-1 text-xs text-negative">
+                <XCircle size={13} weight="fill" />
+                Couldn&apos;t check {label}
+            </span>
+        );
+    }
+
+    if (part.state === 'output-available') {
+        return (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
+                <CheckCircle
+                    size={13}
+                    weight="fill"
+                    className="text-positive"
+                />
+                Checked {label}
+            </span>
+        );
+    }
+
+    // 'input-streaming' | 'input-available' — the call is still running.
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground animate-piggyai-chip-pulse">
+            <CircleNotch
+                size={13}
+                weight="bold"
+                className="animate-spin motion-reduce:animate-none"
+            />
+            Checking {label}…
+        </span>
+    );
+}
+
+// While the trailing assistant message is actively streaming, render raw
+// text word-by-word instead of through ReactMarkdown: each new word mounts
+// as its own span (stable array index as key means already-rendered words
+// are never re-mounted, so they don't replay the fade), giving a per-word
+// reveal timed to the backend's smoothStream word pacing. Markdown syntax
+// (e.g. an in-progress "**") can render literally for the brief streaming
+// window; once the message settles, the caller swaps to ReactMarkdown for
+// the fully formatted final render.
+function StreamingWords({ text }: { text: string }) {
+    const tokens = text.split(/(\s+)/);
+    return (
+        <p className="whitespace-pre-wrap">
+            {tokens.map((token, i) =>
+                /^\s+$/.test(token) ? (
+                    token
+                ) : (
+                    <span
+                        key={i}
+                        className="inline-block animate-piggyai-word-in"
+                    >
+                        {token}
+                    </span>
+                )
+            )}
+            <span
+                aria-hidden="true"
+                className="ml-0.5 inline-block h-3.5 w-[2px] -translate-y-[1px] animate-piggyai-cursor bg-current align-middle"
+            />
+        </p>
+    );
+}
 
 function TypingIndicator() {
     return (
@@ -215,10 +299,16 @@ export default function PiggyAIPage() {
                     ) {
                         return null;
                     }
+                    const isTrailingStreaming =
+                        index === messages.length - 1 &&
+                        message.role === 'assistant' &&
+                        isBusy;
+                    const toolParts = message.parts.filter(isToolPart);
+
                     return (
                         <div
                             key={message.id}
-                            className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex items-end gap-2 animate-piggyai-message-in ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             {message.role === 'assistant' && (
                                 <AssistantAvatar />
@@ -230,51 +320,42 @@ export default function PiggyAIPage() {
                                         : 'border border-border'
                                 }`}
                             >
+                                {toolParts.length > 0 && (
+                                    <div className="mb-2 flex flex-wrap gap-1.5">
+                                        {toolParts.map((part, i) => (
+                                            <ToolCallChip key={i} part={part} />
+                                        ))}
+                                    </div>
+                                )}
                                 {message.parts.map((part, i) => {
-                                    if (part.type === 'text') {
-                                        if (message.role === 'assistant') {
+                                    if (part.type !== 'text') return null;
+                                    if (message.role === 'assistant') {
+                                        if (isTrailingStreaming) {
                                             return (
-                                                <ReactMarkdown
+                                                <StreamingWords
                                                     key={i}
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={
-                                                        markdownComponents
-                                                    }
-                                                >
-                                                    {part.text}
-                                                </ReactMarkdown>
+                                                    text={part.text}
+                                                />
                                             );
                                         }
                                         return (
-                                            <p
+                                            <ReactMarkdown
                                                 key={i}
-                                                className="whitespace-pre-wrap"
+                                                remarkPlugins={[remarkGfm]}
+                                                components={markdownComponents}
                                             >
                                                 {part.text}
-                                            </p>
+                                            </ReactMarkdown>
                                         );
                                     }
-                                    if (
-                                        part.type.startsWith('tool-') &&
-                                        'state' in part &&
-                                        part.state === 'output-available'
-                                    ) {
-                                        return (
-                                            <p
-                                                key={i}
-                                                className="mt-1.5 text-xs italic text-muted-foreground"
-                                            >
-                                                checked{' '}
-                                                {formatToolLabel(
-                                                    part.type.replace(
-                                                        'tool-',
-                                                        ''
-                                                    )
-                                                )}
-                                            </p>
-                                        );
-                                    }
-                                    return null;
+                                    return (
+                                        <p
+                                            key={i}
+                                            className="whitespace-pre-wrap"
+                                        >
+                                            {part.text}
+                                        </p>
+                                    );
                                 })}
                             </div>
                         </div>
