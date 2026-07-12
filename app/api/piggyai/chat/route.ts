@@ -1,14 +1,12 @@
 import {
     streamText,
     convertToModelMessages,
-    stepCountIs,
     smoothStream,
     type UIMessage,
 } from 'ai';
 import { getCurrentUser } from '@/lib/db';
 import { piggyaiModel } from '@/lib/piggyai/model';
-import { buildPiggyaiTools } from '@/lib/piggyai/tools';
-import { buildSystemPrompt } from '@/lib/piggyai/system-prompt';
+import { buildAgentConfig } from '@/lib/piggyai/agent-config';
 
 export async function POST(request: Request) {
     let user;
@@ -21,16 +19,23 @@ export async function POST(request: Request) {
 
     const { messages }: { messages: UIMessage[] } = await request.json();
 
+    // Reasoning traces are one model's internal chain-of-thought, meaningless
+    // as input to a different (or non-reasoning) model — and some providers
+    // reject a 'reasoning' part outright for models that don't support it.
+    // Clients may still be holding history saved under a prior provider, so
+    // this strips it at the boundary rather than trusting the client only
+    // ever sends parts the current model understands.
+    const sanitizedMessages = messages.map((message) => ({
+        ...message,
+        parts: message.parts.filter((part) => part.type !== 'reasoning'),
+    }));
+
     // userId is bound here, once, server-side — never read from the request
     // body, so the model has no parameter through which to supply one.
-    const tools = buildPiggyaiTools(user.id);
-
     const result = streamText({
         model: piggyaiModel,
-        system: buildSystemPrompt(new Date().toISOString().slice(0, 10)),
-        messages: await convertToModelMessages(messages),
-        tools,
-        stopWhen: stepCountIs(5),
+        ...buildAgentConfig(user.id),
+        messages: await convertToModelMessages(sanitizedMessages),
         // The underlying model emits only a handful of large text chunks
         // (whole clauses at a time) rather than small token deltas, so
         // without this the UI visibly jumps between big blocks of text.
@@ -42,20 +47,6 @@ export async function POST(request: Request) {
             chunking: 'word',
             delayInMs: 35,
         }),
-        // Left at its default thinking level, the model spends many seconds
-        // of internal chain-of-thought before each tool call and again
-        // before the final answer — the dominant share of response latency,
-        // traced at ~75% of total time on a two-tool query. Every factual
-        // claim is already forced through a tool call result (see system
-        // prompt), so answer correctness doesn't depend on deep reasoning
-        // here. This model only accepts a discrete thinkingLevel (a numeric
-        // thinkingBudget errors as unsupported), and 'minimal' is the
-        // lowest level it accepts ('low'/'medium' are rejected too).
-        providerOptions: {
-            google: {
-                thinkingConfig: { thinkingLevel: 'minimal' },
-            },
-        },
     });
 
     return result.toUIMessageStreamResponse();
