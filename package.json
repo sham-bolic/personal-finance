@@ -9,7 +9,7 @@
         "lint": "eslint",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "seed:dev": "tsx scripts/seed-dev-user.ts",
+        "seed:dev": "tsx scripts/seed-dev-user.ts"
     },
     "dependencies": {
         "@ai-sdk/groq": "^4.0.8",
