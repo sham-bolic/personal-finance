@@ -82,6 +82,23 @@ const markdownComponents: Components = {
             {children}
         </code>
     ),
+    table: ({ children }) => (
+        <div className="my-2 overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+                {children}
+            </table>
+        </div>
+    ),
+    thead: ({ children }) => (
+        <thead className="border-b border-border">{children}</thead>
+    ),
+    tr: ({ children }) => (
+        <tr className="border-b border-border last:border-0">{children}</tr>
+    ),
+    th: ({ children }) => (
+        <th className="px-3 py-1.5 font-semibold">{children}</th>
+    ),
+    td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
 };
 
 // Narrows a message part to the shape tool-call parts share (type prefixed

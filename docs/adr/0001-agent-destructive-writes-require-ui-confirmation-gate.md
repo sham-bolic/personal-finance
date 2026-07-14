@@ -1,0 +1,5 @@
+# Piggy's destructive writes require a UI confirmation gate, not conversational confirmation
+
+Piggy (the AI agent) is gaining write access to Goals, GoalContributions, and Budgets. For deletes specifically, we considered having the agent describe the action in text and treat the user's next chat reply as consent, gated entirely by the LLM's own judgment of whether that reply means "yes." We rejected this: a misread reply ("yeah that guy") would still trigger an irreversible delete with no deterministic gate. Instead, delete tool calls pause client-side (AI SDK v7's client-side-tool / `addToolResult` pattern) and only execute server-side after the user clicks an explicit Confirm/Cancel button rendered in the chat. Non-destructive writes (create, update, add/edit contribution) execute directly without this gate, since they're easily corrected after the fact.
+
+This is harder to reverse later (it's load-bearing UI/tool-call architecture, not a prompt tweak), and a future reader might reasonably assume the simpler conversational approach was "good enough" for a chat agent — worth recording why it wasn't chosen.

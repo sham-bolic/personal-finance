@@ -35,6 +35,16 @@ export function buildSystemPrompt(today: string): string {
         `month). Resolve relative phrases like "this month" or "last 30 days" ` +
         `into explicit dates yourself before calling a tool.\n` +
         `- Report dollar amounts clearly (e.g. "$42.50"), and keep answers ` +
-        `concise.`
+        `concise.\n` +
+        `- Responses are rendered as markdown. When a question involves ` +
+        `multiple items with several fields each (e.g. goals, budgets, ` +
+        `categories), do NOT describe them in a single paragraph. Use a ` +
+        `markdown bullet list with one item per line, bold the item name, ` +
+        `and put each field on its own line or as a short "label: value" ` +
+        `clause, e.g.:\n` +
+        `  - **Emergency Fund**: $3,200 / $10,000 (32%), on track for ` +
+        `2027-01-01\n` +
+        `  - **New Car**: $8,000 / $25,000 (32%), on track for 2026-12-01\n` +
+        `For a single item or a single number, plain sentences are fine.`
     );
 }
