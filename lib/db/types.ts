@@ -3,7 +3,7 @@
 // decoupled from any SDK's wire format. Read-side query/filter shapes live here
 // too, so consumers import all lib/db types from one place.
 
-import type { PlaidPrimaryCategory } from '@/generated/prisma/client';
+import type { PlaidPrimaryCategory, Source } from '@/generated/prisma/client';
 
 export type PlaidItemInput = {
     userId: string;
@@ -148,6 +148,7 @@ export type BudgetInput = {
     category: PlaidPrimaryCategory;
     monthlyAmount: number;
     effectiveFrom?: string; // 'YYYY-MM-DD', defaults to today in the db layer
+    source?: Source; // defaults to 'user' in the db layer; only applied on create, never on update
 };
 
 export type BudgetProgress = {
@@ -163,6 +164,7 @@ export type GoalInput = {
     name: string;
     targetAmount: number;
     targetDate?: string; // 'YYYY-MM-DD'
+    source?: Source; // defaults to 'user' in the db layer
 };
 
 export type GoalUpdateInput = {
@@ -177,6 +179,7 @@ export type GoalContributionInput = {
     amount: number;
     date?: string; // 'YYYY-MM-DD', defaults to today in the db layer
     note?: string;
+    source?: Source; // defaults to 'user' in the db layer
 };
 
 export type GoalWithProgress = {

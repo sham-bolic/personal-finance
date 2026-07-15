@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     const body = await request.json();
-    const { name, targetAmount, targetDate } = body;
+    const { name, targetAmount, targetDate, source } = body;
 
     if (typeof name !== 'string' || name.trim().length === 0) {
         return Response.json({ error: 'name is required' }, { status: 400 });
@@ -36,6 +36,10 @@ export async function POST(request: Request) {
             name,
             targetAmount,
             targetDate,
+            // Only 'agent' is ever honored explicitly; anything else falls
+            // through to the db layer's 'user' default rather than trusting
+            // an arbitrary client-supplied value.
+            source: source === 'agent' ? 'agent' : undefined,
         });
 
         return Response.json({ goal }, { status: 201 });

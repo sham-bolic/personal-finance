@@ -39,6 +39,7 @@ export async function upsertBudget(
             category: input.category,
             monthlyAmount: input.monthlyAmount,
             effectiveFrom,
+            source: input.source,
         },
     });
 }
@@ -67,6 +68,15 @@ export async function getBudgetsByUser(
     }
 
     return Array.from(byCategory.values());
+}
+
+// Scoped by both id and userId, for route-level ownership checks.
+export async function getBudgetById(
+    id: string,
+    userId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<Budget | null> {
+    return db.budget.findFirst({ where: { id, userId } });
 }
 
 // Returns the number of rows deleted (0 or 1) so callers can distinguish

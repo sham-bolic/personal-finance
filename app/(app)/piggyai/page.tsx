@@ -16,6 +16,7 @@ import {
     CircleNotch,
     PaperPlaneRight,
     PiggyBank,
+    Warning,
     XCircle,
 } from '@phosphor-icons/react';
 import { loadChatHistory, saveChatHistory } from '@/lib/piggyai/local-storage';
@@ -108,6 +109,203 @@ type ToolPart = Extract<UIMessage['parts'][number], { type: `tool-${string}` }>;
 
 function isToolPart(part: UIMessage['parts'][number]): part is ToolPart {
     return part.type.startsWith('tool-') && 'state' in part;
+}
+
+// Tool names whose execute() only ever reads — it stages a Proposal rather
+// than writing anything — so their output renders as an interactive confirm
+// card instead of the passive ToolCallChip every other (read-only) tool
+// gets. See docs/adr/0001-agent-destructive-writes-require-ui-confirmation-gate.md.
+const PROPOSAL_TOOL_TYPES = new Set([
+    'tool-createGoal',
+    'tool-updateGoal',
+    'tool-deleteGoal',
+    'tool-setBudget',
+    'tool-deleteBudget',
+    'tool-logGoalContribution',
+]);
+
+// A proposal part is only renderable as a card once its output has actually
+// arrived — mid-flight it still shows the generic "Checking..." chip like
+// any other tool call, since there's nothing to confirm yet.
+function isProposalPart(part: UIMessage['parts'][number]): part is ToolPart {
+    return (
+        isToolPart(part) &&
+        PROPOSAL_TOOL_TYPES.has(part.type) &&
+        part.state === 'output-available'
+    );
+}
+
+type ProposalDetail = { label: string; value: string };
+
+// Mirrors the ProposalResult union each mutating tool's execute() returns in
+// lib/piggyai/tools.ts, plus the outcome states this client adds once the
+// user acts (confirmed/cancelled/error) — see ConfirmationOutcome below.
+// `confirm` is a fully-formed request built server-side from ground-truth
+// data; Confirm replays it verbatim rather than reconstructing it from the
+// tool's input, so the card can never promise something different from what
+// actually executes.
+type ProposalOutput =
+    | { status: 'not_found'; message: string }
+    | {
+          status: 'proposed' | 'confirmed' | 'cancelled' | 'error';
+          summary: string;
+          details: ProposalDetail[];
+          destructive: boolean;
+          confirm?: {
+              method: 'POST' | 'PATCH' | 'DELETE';
+              url: string;
+              body?: Record<string, unknown>;
+          };
+          errorMessage?: string;
+      };
+
+type ConfirmationOutcome =
+    | { status: 'confirmed' }
+    | { status: 'cancelled' }
+    | { status: 'error'; errorMessage: string };
+
+function ProposalCard({
+    part,
+    onSettle,
+}: {
+    part: ToolPart;
+    onSettle: (toolCallId: string, outcome: ConfirmationOutcome) => void;
+}) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const output = part.output as ProposalOutput;
+
+    if (output.status === 'not_found') {
+        return (
+            <div className="my-3 flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+                <Warning size={14} weight="fill" className="mt-0.5 shrink-0" />
+                <span>{output.message}</span>
+            </div>
+        );
+    }
+
+    async function handleConfirm() {
+        if (output.status !== 'not_found' && output.confirm) {
+            setIsSubmitting(true);
+            try {
+                const res = await fetch(output.confirm.url, {
+                    method: output.confirm.method,
+                    headers: output.confirm.body
+                        ? { 'Content-Type': 'application/json' }
+                        : undefined,
+                    body: output.confirm.body
+                        ? JSON.stringify(output.confirm.body)
+                        : undefined,
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    onSettle(part.toolCallId, {
+                        status: 'error',
+                        errorMessage:
+                            data.error ?? `Request failed (${res.status})`,
+                    });
+                    return;
+                }
+                onSettle(part.toolCallId, { status: 'confirmed' });
+            } catch {
+                onSettle(part.toolCallId, {
+                    status: 'error',
+                    errorMessage: 'Network error — please try again.',
+                });
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
+    }
+
+    function handleCancel() {
+        onSettle(part.toolCallId, { status: 'cancelled' });
+    }
+
+    const borderClass =
+        output.status === 'error'
+            ? 'border-negative/30'
+            : output.destructive && output.status === 'proposed'
+              ? 'border-negative/30'
+              : 'border-border';
+
+    return (
+        <div
+            className={`my-3 overflow-hidden rounded-lg border ${borderClass} bg-background/60`}
+        >
+            <div className="px-3.5 py-3">
+                <p className="text-sm font-medium">{output.summary}</p>
+                <dl className="mt-2 space-y-1">
+                    {output.details.map((detail, i) => (
+                        <div key={i} className="flex gap-1.5 text-xs">
+                            <dt className="shrink-0 text-muted-foreground">
+                                {detail.label}:
+                            </dt>
+                            <dd className="text-foreground">{detail.value}</dd>
+                        </div>
+                    ))}
+                </dl>
+                {output.status === 'error' && (
+                    <p className="mt-1.5 flex items-center gap-1 text-xs text-negative">
+                        <XCircle size={13} weight="fill" />
+                        {output.errorMessage}
+                    </p>
+                )}
+            </div>
+
+            {(output.status === 'proposed' || output.status === 'error') && (
+                <div className="flex gap-2 border-t border-border bg-muted/30 px-3.5 py-2.5">
+                    <button
+                        type="button"
+                        onClick={handleConfirm}
+                        disabled={isSubmitting}
+                        className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                            output.destructive
+                                ? 'bg-negative hover:bg-negative/90'
+                                : 'bg-primary hover:bg-primary-hover'
+                        }`}
+                    >
+                        {isSubmitting && (
+                            <CircleNotch
+                                size={12}
+                                weight="bold"
+                                className="animate-spin"
+                            />
+                        )}
+                        {output.status === 'error'
+                            ? 'Retry'
+                            : output.destructive
+                              ? 'Confirm delete'
+                              : 'Confirm'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
+
+            {output.status === 'confirmed' && (
+                <div className="flex items-center gap-1.5 border-t border-border bg-muted/30 px-3.5 py-2 text-xs text-muted-foreground">
+                    <CheckCircle
+                        size={13}
+                        weight="fill"
+                        className="text-positive"
+                    />
+                    Done
+                </div>
+            )}
+
+            {output.status === 'cancelled' && (
+                <div className="border-t border-border bg-muted/30 px-3.5 py-2 text-xs text-muted-foreground">
+                    Cancelled
+                </div>
+            )}
+        </div>
+    );
 }
 
 // Tool calls get their own pill so the "what Piggy checked" trail reads as
@@ -242,6 +440,49 @@ export default function PiggyAIPage() {
         });
     }, [messages, status]);
 
+    // Confirm/Cancel never round-trip through the model — they call the
+    // REST route directly (see ProposalCard) — so the outcome is patched
+    // into this tool part's stored output here, in local chat state, rather
+    // than via a new assistant turn. That keeps it in every future request's
+    // history (useChat resends full `messages` each turn) so the model can
+    // answer "did that go through?" from context instead of re-querying.
+    function handleProposalSettle(
+        messageId: string,
+        toolCallId: string,
+        outcome: ConfirmationOutcome
+    ) {
+        setMessages((prev) =>
+            prev.map((message) => {
+                if (message.id !== messageId) return message;
+                return {
+                    ...message,
+                    parts: message.parts.map((part) => {
+                        if (
+                            !isToolPart(part) ||
+                            part.toolCallId !== toolCallId ||
+                            part.state !== 'output-available'
+                        ) {
+                            return part;
+                        }
+                        const output = part.output as ProposalOutput;
+                        if (output.status === 'not_found') return part;
+                        return {
+                            ...part,
+                            output: {
+                                ...output,
+                                status: outcome.status,
+                                errorMessage:
+                                    outcome.status === 'error'
+                                        ? outcome.errorMessage
+                                        : undefined,
+                            },
+                        };
+                    }),
+                };
+            })
+        );
+    }
+
     function resizeTextarea() {
         const el = textareaRef.current;
         if (!el) return;
@@ -320,7 +561,14 @@ export default function PiggyAIPage() {
                         index === messages.length - 1 &&
                         message.role === 'assistant' &&
                         isBusy;
-                    const toolParts = message.parts.filter(isToolPart);
+                    // Proposal parts render their own full-width card in
+                    // place (in generation order, alongside text) once
+                    // output-available, rather than the passive chip every
+                    // other tool call gets — so exclude them from the chip
+                    // row once they've reached that state.
+                    const toolParts = message.parts.filter(
+                        (part) => isToolPart(part) && !isProposalPart(part)
+                    );
 
                     return (
                         <div
@@ -345,6 +593,24 @@ export default function PiggyAIPage() {
                                     </div>
                                 )}
                                 {message.parts.map((part, i) => {
+                                    if (isProposalPart(part)) {
+                                        return (
+                                            <ProposalCard
+                                                key={i}
+                                                part={part}
+                                                onSettle={(
+                                                    toolCallId,
+                                                    outcome
+                                                ) =>
+                                                    handleProposalSettle(
+                                                        message.id,
+                                                        toolCallId,
+                                                        outcome
+                                                    )
+                                                }
+                                            />
+                                        );
+                                    }
                                     if (part.type !== 'text') return null;
                                     if (message.role === 'assistant') {
                                         if (isTrailingStreaming) {

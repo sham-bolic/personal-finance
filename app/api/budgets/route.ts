@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     const body = await request.json();
-    const { category, monthlyAmount, effectiveFrom } = body;
+    const { category, monthlyAmount, effectiveFrom, source } = body;
 
     if (!BUDGETABLE_CATEGORIES.includes(category)) {
         return Response.json({ error: 'Invalid category' }, { status: 400 });
@@ -44,6 +44,10 @@ export async function POST(request: Request) {
             category,
             monthlyAmount,
             effectiveFrom,
+            // Only 'agent' is ever honored explicitly; anything else falls
+            // through to the db layer's 'user' default (and is ignored
+            // entirely on the update branch — source is create-only).
+            source: source === 'agent' ? 'agent' : undefined,
         });
 
         return Response.json({ budget }, { status: 201 });

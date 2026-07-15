@@ -1,0 +1,7 @@
+# Confirmation cards are built from server-side data, never from the model's own text
+
+Each of Piggy's write tools stages a Proposal rather than executing directly (see 0001). The open question was what the confirmation card shows the user: the model's own tool-call arguments and surrounding chat text, or a fresh read-only lookup of the current record (scoped to the authenticated user) performed by the tool's `execute()` at proposal time. We chose the fresh lookup for every proposal, including deletes and updates — the card's "delete Goal X, $2,000 target" or "target $50,000 → $60,000" summary is always rendered from what the database actually contains for that id, not from anything the LLM said.
+
+The alternative — trusting the model's description — was rejected because the card's entire purpose is to be the thing the user checks _before_ trusting the agent. If a hallucinated or prompt-injected instruction could cause the model to describe a small, harmless-sounding change while the `id` in the actual payload points at something else, the confirmation card would be lying at exactly the moment it exists to prevent that.
+
+This is hard to reverse (it constrains every write tool's `execute()` to always re-fetch, not just format model output) and non-obvious to a future contributor adding a new write tool, who might reasonably assume passing a human-readable label through the tool call is simpler and just as safe — it isn't, for financial data.

@@ -25,6 +25,7 @@ export async function createGoal(
             targetDate: input.targetDate
                 ? toDateOnly(input.targetDate)
                 : undefined,
+            source: input.source,
         },
     });
 }
@@ -96,6 +97,7 @@ export async function addGoalContribution(
             amount: input.amount,
             date: toDateOnly(input.date),
             note: input.note,
+            source: input.source,
         },
     });
 }

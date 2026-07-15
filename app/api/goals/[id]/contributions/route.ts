@@ -35,7 +35,7 @@ export async function POST(
 ) {
     const { id } = await params;
     const body = await request.json();
-    const { amount, date, note } = body;
+    const { amount, date, note, source } = body;
 
     if (typeof amount !== 'number' || amount <= 0) {
         return Response.json(
@@ -56,6 +56,9 @@ export async function POST(
             amount,
             date,
             note,
+            // Only 'agent' is ever honored explicitly; anything else falls
+            // through to the db layer's 'user' default.
+            source: source === 'agent' ? 'agent' : undefined,
         });
         return Response.json({ contribution }, { status: 201 });
     } catch (e) {

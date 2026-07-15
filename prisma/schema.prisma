@@ -136,6 +136,14 @@ enum PlaidPrimaryCategory {
   RENT_AND_UTILITIES
 }
 
+// Who created a Goal/GoalContribution/Budget row — set once at creation and
+// never changed afterward, even if the record is later edited by the other
+// party. See docs/adr/0002-source-provenance-field-created-by-only.md.
+enum Source {
+  user
+  agent
+}
+
 model Budget {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @db.Uuid
@@ -144,6 +152,7 @@ model Budget {
   category      PlaidPrimaryCategory
   monthlyAmount Decimal              @db.Decimal(14, 2)
   effectiveFrom DateTime             @db.Date // budget applies from this date until a later effectiveFrom row for the same category supersedes it
+  source        Source               @default(user)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,6 +170,7 @@ model Goal {
   targetAmount Decimal   @db.Decimal(14, 2)
   targetDate   DateTime? @db.Date
   status       String    @default("active") // active | completed | archived
+  source       Source    @default(user)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -178,6 +188,7 @@ model GoalContribution {
   amount Decimal  @db.Decimal(14, 2)
   date   DateTime @db.Date
   note   String?
+  source Source   @default(user)
 
   createdAt DateTime @default(now())
 
