@@ -22,6 +22,16 @@ take action over your financial data.
 - **PiggyAI** - a chat assistant (`/piggyai`) with tool-calling access to the user's financial data
 - **Bank linking** - Plaid Link flow to connect accounts, with an initial historical backfill and a daily cron sync
 
+## Screenshots
+
+| Dashboard | Budgets |
+| --- | --- |
+| ![Dashboard](public/screenshots/dashboard.png) | ![Budgets](public/screenshots/budgets.png) |
+
+| Goals | PiggyAI |
+| --- | --- |
+| ![Goals](public/screenshots/goals.png) | ![PiggyAI](public/screenshots/piggyai.png) |
+
 ## Getting started
 
 1. Copy `.env.example` to `.env` and fill in the values (Plaid, Supabase, database URLs, encryption key, Groq API
