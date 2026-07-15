@@ -14,6 +14,16 @@ export async function upsertPlaidItem(
 ): Promise<PlaidItem> {
     const encrypted_token = encrypt(input.accessToken);
 
+    const existing = await db.plaidItem.findUnique({
+        where: { plaidItemId: input.plaidItemId },
+    });
+
+    if (existing && existing.userId !== input.userId) {
+        throw new Error(
+            `plaidItemId ${input.plaidItemId} is already linked to a different user`
+        );
+    }
+
     return db.plaidItem.upsert({
         where: { plaidItemId: input.plaidItemId },
         update: {
