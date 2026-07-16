@@ -1,5 +1,5 @@
 import { after } from 'next/server';
-import { client } from '@/lib/plaid_client';
+import { client, fetchInstitutionForItem } from '@/lib/plaid_client';
 import { AccountInput, getCurrentUser, linkPlaidItem } from '@/lib/db';
 import { backfillNewItem } from '@/lib/plaid_sync';
 
@@ -37,10 +37,12 @@ export async function POST(request: Request) {
     }
 
     try {
-        // user lookup and accountsGet are independent — run them concurrently.
-        const [user, accountsRes] = await Promise.all([
+        // user lookup, accountsGet and institution lookup are independent - run
+        // them concurrently.
+        const [user, accountsRes, institution] = await Promise.all([
             getCurrentUser(),
             client.accountsGet({ access_token }),
+            fetchInstitutionForItem(access_token),
         ]);
 
         const accounts: AccountInput[] = accountsRes.data.accounts.map(
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
             userId: user.id,
             plaidItemId: item_id,
             accessToken: access_token,
+            institutionId: institution.institutionId,
+            institutionName: institution.institutionName,
             accounts,
             // New links request Investments consent at link time (see
             // create_link_token), so they never need the reconnect opt-in.
