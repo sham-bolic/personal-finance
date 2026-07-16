@@ -34,9 +34,9 @@ function isSortState(value: unknown): value is SortState {
 
 export function loadSort(accountId: string): SortState {
     if (typeof window === 'undefined') return DEFAULT_SORT;
-    const raw = localStorage.getItem(storageKey(accountId));
-    if (!raw) return DEFAULT_SORT;
     try {
+        const raw = localStorage.getItem(storageKey(accountId));
+        if (!raw) return DEFAULT_SORT;
         const parsed: unknown = JSON.parse(raw);
         return isSortState(parsed) ? parsed : DEFAULT_SORT;
     } catch {
@@ -46,5 +46,10 @@ export function loadSort(accountId: string): SortState {
 
 export function saveSort(accountId: string, sort: SortState): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(storageKey(accountId), JSON.stringify(sort));
+    try {
+        localStorage.setItem(storageKey(accountId), JSON.stringify(sort));
+    } catch {
+        // Storage disabled/full (e.g. Safari private browsing, quota
+        // exceeded) - persistence is a nice-to-have, not worth surfacing.
+    }
 }

@@ -18,12 +18,24 @@ import { loadSort, saveSort } from './sortPersistence';
 
 const TOP_N = 3;
 
-const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right' }[] = [
-    { key: 'security', label: 'Security', align: 'left' },
-    { key: 'quantity', label: 'Quantity', align: 'right' },
-    { key: 'price', label: 'Price', align: 'right' },
-    { key: 'marketValue', label: 'Market value', align: 'right' },
-    { key: 'percent', label: '% of portfolio', align: 'right' },
+// Fixed widths (summing to 100%) so re-sorting - which swaps in different
+// rows with different text lengths - can't reflow the columns themselves.
+const COLUMNS: {
+    key: SortKey;
+    label: string;
+    align: 'left' | 'right';
+    width: string;
+}[] = [
+    { key: 'security', label: 'Security', align: 'left', width: '34%' },
+    { key: 'quantity', label: 'Quantity', align: 'right', width: '15%' },
+    { key: 'price', label: 'Price', align: 'right', width: '15%' },
+    {
+        key: 'marketValue',
+        label: 'Market value',
+        align: 'right',
+        width: '18%',
+    },
+    { key: 'percent', label: '% of portfolio', align: 'right', width: '18%' },
 ];
 
 // A single investment account and its holdings, sorted largest-position-first
@@ -88,7 +100,7 @@ export function AccountHoldingsCard({
                 </div>
             </header>
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
+                <table className="w-full table-fixed border-collapse text-sm">
                     <caption className="sr-only">
                         Holdings in {accountName}
                     </caption>
@@ -111,6 +123,7 @@ export function AccountHoldingsCard({
                                         key={col.key}
                                         scope="col"
                                         aria-sort={ariaSort}
+                                        style={{ width: col.width }}
                                         className={`px-4 py-3 font-medium ${
                                             alignRight
                                                 ? 'text-right'
@@ -134,13 +147,16 @@ export function AccountHoldingsCard({
                                             } ${active ? 'text-foreground' : ''}`}
                                         >
                                             {col.label}
-                                            {active && (
-                                                <Caret
-                                                    size={11}
-                                                    weight="bold"
-                                                    aria-hidden="true"
-                                                />
-                                            )}
+                                            <Caret
+                                                size={11}
+                                                weight="bold"
+                                                aria-hidden="true"
+                                                className={
+                                                    active
+                                                        ? undefined
+                                                        : 'invisible'
+                                                }
+                                            />
                                         </button>
                                     </th>
                                 );
