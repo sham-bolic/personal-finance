@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import type { HoldingDTO } from '@/lib/db/types';
 import {
@@ -9,12 +9,12 @@ import {
     holdingLabel,
 } from './format';
 import {
-    DEFAULT_SORT,
     nextSortState,
     sortHoldings,
     type SortKey,
     type SortState,
 } from './sortHoldings';
+import { loadSort, saveSort } from './sortPersistence';
 
 const TOP_N = 3;
 
@@ -30,12 +30,14 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right' }[] = [
 // by the caller. Shows the top few by market value with a toggle to reveal the
 // rest, so an account with many positions stays scannable.
 export function AccountHoldingsCard({
+    accountId,
     accountName,
     accountSubtitle,
     accountTotal,
     portfolioTotal,
     holdings,
 }: {
+    accountId: string;
     accountName: string;
     accountSubtitle: string | null;
     accountTotal: number;
@@ -43,7 +45,18 @@ export function AccountHoldingsCard({
     holdings: HoldingDTO[];
 }) {
     const [expanded, setExpanded] = useState(false);
-    const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+    const [sort, setSort] = useState<SortState>(() => loadSort(accountId));
+    // Compared by reference rather than a "have we mounted yet" boolean:
+    // React's Strict Mode dev double-invoke replays this effect with the
+    // same sort reference, so a boolean flag reset via cleanup can't tell
+    // that apart from a genuine user-driven change. A real setSort call
+    // always produces a new object, so identity is what actually changed.
+    const lastSavedSort = useRef(sort);
+    useEffect(() => {
+        if (lastSavedSort.current === sort) return;
+        lastSavedSort.current = sort;
+        saveSort(accountId, sort);
+    }, [accountId, sort]);
     const sorted = useMemo(
         () => sortHoldings(holdings, sort),
         [holdings, sort]

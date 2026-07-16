@@ -124,6 +124,7 @@ export default function InvestmentsPage() {
                     {accountGroups.map((group) => (
                         <AccountHoldingsCard
                             key={group.accountId}
+                            accountId={group.accountId}
                             accountName={group.accountName}
                             accountSubtitle={group.subtitle}
                             accountTotal={group.total}
