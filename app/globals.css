@@ -160,3 +160,56 @@ body {
         opacity: 0.6;
     }
 }
+
+/* PiggyAI chat: soft fade at the top/bottom edges of the scroll region so
+   messages dissolve into the container border instead of hard-clipping. Each
+   edge's fade only appears when there's actually content hidden past it (data
+   attributes toggled from scroll position), and the fade length is a
+   registered @property so it eases in/out rather than snapping. */
+@property --piggyai-fade-top {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --piggyai-fade-bottom {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+
+.piggyai-scroll-fade {
+    --piggyai-fade-top: 0px;
+    --piggyai-fade-bottom: 0px;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black var(--piggyai-fade-top),
+        black calc(100% - var(--piggyai-fade-bottom)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black var(--piggyai-fade-top),
+        black calc(100% - var(--piggyai-fade-bottom)),
+        transparent 100%
+    );
+    transition:
+        --piggyai-fade-top 200ms ease,
+        --piggyai-fade-bottom 200ms ease;
+}
+
+.piggyai-scroll-fade[data-fade-top='true'] {
+    --piggyai-fade-top: 4.5rem;
+}
+
+.piggyai-scroll-fade[data-fade-bottom='true'] {
+    --piggyai-fade-bottom: 4.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .piggyai-scroll-fade {
+        transition: none;
+    }
+}

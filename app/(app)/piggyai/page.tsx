@@ -2,6 +2,7 @@
 import { useChat, type UIMessage } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import {
+    useCallback,
     useEffect,
     useRef,
     useState,
@@ -407,12 +408,28 @@ export default function PiggyAIPage() {
     const [hydrated, setHydrated] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [fade, setFade] = useState({ top: false, bottom: false });
     const { messages, setMessages, sendMessage, status, error, regenerate } =
         useChat({
             transport: new DefaultChatTransport({ api: '/api/piggyai/chat' }),
         });
 
     const isBusy = status === 'submitted' || status === 'streaming';
+
+    // Toggle the edge fades based on whether content is actually clipped above
+    // or below the viewport, so the first/last message never fades when the
+    // list fits (or is scrolled hard against an edge). The 1px slack absorbs
+    // sub-pixel scroll rounding that would otherwise flicker the fade.
+    const updateFade = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const top = el.scrollTop > 1;
+        const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+        setFade((prev) =>
+            prev.top === top && prev.bottom === bottom ? prev : { top, bottom }
+        );
+    }, []);
 
     // Read localStorage only after mount (client-only) rather than during
     // render, to avoid an SSR/hydration mismatch — the initial render must
@@ -438,7 +455,10 @@ export default function PiggyAIPage() {
             behavior: reduceMotion ? 'auto' : 'smooth',
             block: 'end',
         });
-    }, [messages, status]);
+        // Content just grew (or the list re-rendered) — recheck which edges
+        // overflow so the fades track the new scroll extent.
+        updateFade();
+    }, [messages, status, updateFade]);
 
     // Confirm/Cancel never round-trip through the model — they call the
     // REST route directly (see ProposalCard) — so the outcome is patched
@@ -520,7 +540,13 @@ export default function PiggyAIPage() {
                 </p>
             </header>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto rounded-xl border border-border p-4">
+            <div
+                ref={scrollRef}
+                onScroll={updateFade}
+                data-fade-top={fade.top}
+                data-fade-bottom={fade.bottom}
+                className="piggyai-scroll-fade min-h-0 flex-1 space-y-4 overflow-y-auto rounded-xl border border-border p-4"
+            >
                 {messages.length === 0 && (
                     <div className="flex h-full flex-col items-center justify-center gap-4 px-2 py-8 text-center">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
