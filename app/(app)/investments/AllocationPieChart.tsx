@@ -1,8 +1,12 @@
 'use client';
-import { useMemo } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { useMemo, useState } from 'react';
+import type { PieSectorDataItem } from 'recharts/types/polar/Pie';
+import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from 'recharts';
 import type { HoldingDTO } from '@/lib/db/types';
 import { formatCurrency, formatPercent, holdingLabel } from './format';
+
+// How far the active sector pops beyond the resting outer radius, in px.
+const ACTIVE_POP = 6;
 
 // The largest N holdings are shown individually; the long tail of smaller
 // positions is rolled into a single "Other" slice so the chart stays legible.
@@ -91,6 +95,14 @@ export function AllocationPieChart({
         [holdings, total]
     );
 
+    // Single shared active-slice state driving both the donut and the legend:
+    // hovering/focusing either surface sets the key, and the other side reacts.
+    const [activeKey, setActiveKey] = useState<string | null>(null);
+    const activeIndex = activeKey
+        ? slices.findIndex((s) => s.key === activeKey)
+        : -1;
+    const activeSlice = activeIndex >= 0 ? slices[activeIndex] : null;
+
     if (slices.length === 0) {
         return (
             <p className="py-10 text-center text-sm text-muted-foreground">
@@ -98,6 +110,38 @@ export function AllocationPieChart({
             </p>
         );
     }
+
+    // Custom sector renderer: pops the active slice outward by ACTIVE_POP.
+    // We compute "active" from our own shared state (not Recharts' internal
+    // hover) so legend-driven activation pops the matching slice too.
+    const renderSector = (props: PieSectorDataItem & { index: number }) => {
+        const {
+            cx,
+            cy,
+            innerRadius,
+            outerRadius = 0,
+            startAngle,
+            endAngle,
+            fill,
+            stroke,
+            strokeWidth,
+            index,
+        } = props;
+        const isActive = index === activeIndex;
+        return (
+            <Sector
+                cx={cx}
+                cy={cy}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius + (isActive ? ACTIVE_POP : 0)}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+            />
+        );
+    };
 
     return (
         <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-10">
@@ -116,6 +160,11 @@ export function AllocationPieChart({
                             stroke="var(--surface)"
                             strokeWidth={2}
                             isAnimationActive={false}
+                            shape={renderSector}
+                            onMouseEnter={(_, index) =>
+                                setActiveKey(slices[index]?.key ?? null)
+                            }
+                            onMouseLeave={() => setActiveKey(null)}
                         >
                             {slices.map((slice) => (
                                 <Cell key={slice.key} fill={slice.color} />
@@ -123,37 +172,60 @@ export function AllocationPieChart({
                         </Pie>
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-xs text-muted-foreground">Total</span>
-                    <span className="font-mono text-lg font-semibold tabular-nums">
-                        {formatCurrency(total)}
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+                    <span className="max-w-full truncate text-xs text-muted-foreground">
+                        {activeSlice ? activeSlice.label : 'Total'}
                     </span>
+                    <span className="font-mono text-lg font-semibold tabular-nums">
+                        {formatCurrency(
+                            activeSlice ? activeSlice.value : total
+                        )}
+                    </span>
+                    {activeSlice && (
+                        <span className="max-w-full truncate text-xs text-muted-foreground">
+                            {activeSlice.key === '__other__'
+                                ? activeSlice.sublabel
+                                : formatPercent(activeSlice.fraction)}
+                        </span>
+                    )}
                 </div>
             </div>
 
-            <ul className="flex w-full flex-col gap-2">
+            <ul className="flex w-full flex-col gap-1">
                 {slices.map((slice) => (
-                    <li
-                        key={slice.key}
-                        className="flex items-center gap-3 text-sm"
-                    >
-                        <span
-                            aria-hidden="true"
-                            className="size-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: slice.color }}
-                        />
-                        <span className="min-w-0 flex-1 truncate">
-                            <span className="font-medium">{slice.label}</span>
-                            {slice.sublabel && (
-                                <span className="text-muted-foreground">
-                                    {' '}
-                                    · {slice.sublabel}
+                    <li key={slice.key}>
+                        <button
+                            type="button"
+                            onMouseEnter={() => setActiveKey(slice.key)}
+                            onMouseLeave={() => setActiveKey(null)}
+                            onFocus={() => setActiveKey(slice.key)}
+                            onBlur={() => setActiveKey(null)}
+                            className={`flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                                slice.key === activeKey
+                                    ? 'bg-surface-hover'
+                                    : ''
+                            }`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="size-2.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: slice.color }}
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                                <span className="font-medium">
+                                    {slice.label}
                                 </span>
-                            )}
-                        </span>
-                        <span className="font-mono tabular-nums text-muted-foreground">
-                            {formatPercent(slice.fraction)}
-                        </span>
+                                {slice.sublabel && (
+                                    <span className="text-muted-foreground">
+                                        {' '}
+                                        · {slice.sublabel}
+                                    </span>
+                                )}
+                            </span>
+                            <span className="font-mono tabular-nums text-muted-foreground">
+                                {formatPercent(slice.fraction)}
+                            </span>
+                        </button>
                     </li>
                 ))}
             </ul>
