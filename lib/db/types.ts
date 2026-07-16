@@ -188,6 +188,16 @@ export type NetWorthHistoryPoint = {
     net: number;
 };
 
+export type PortfolioValueHistoryOpts = {
+    from?: string;
+    to?: string;
+};
+
+export type PortfolioValueHistoryPoint = {
+    date: string;
+    value: number;
+};
+
 export type CashFlowHistoryOpts = {
     from?: string;
     to?: string;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HoldingDTO } from '@/lib/db/types';
 import { AllocationPieChart } from './AllocationPieChart';
 import { AccountHoldingsCard } from './AccountHoldingsCard';
+import { PortfolioHistoryChart } from './PortfolioHistoryChart';
 
 // Human-readable subtitle for an account card: subtype (e.g. "401k", "ira")
 // plus the masked account number when present, e.g. "401k · ••1234".
@@ -114,6 +115,8 @@ export default function InvestmentsPage() {
 
             {status === 'ready' && holdings.length > 0 && (
                 <div className="flex flex-col gap-6">
+                    <PortfolioHistoryChart currentValue={total} />
+
                     <section className="rounded-2xl border border-border/60 bg-surface p-6">
                         <h2 className="mb-6 text-sm font-medium text-muted-foreground">
                             Allocation by security

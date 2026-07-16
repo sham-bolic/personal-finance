@@ -7,6 +7,7 @@ import {
     HoldingInput,
     itemHasInvestmentAccount,
     reconcileHoldings,
+    snapshotAccountBalances,
     SecurityInput,
     TransactionInput,
     updateSyncCursor,
@@ -189,4 +190,12 @@ export async function backfillNewItem(item: PlaidItem): Promise<void> {
             backfillAccountBalanceHistory(accountId)
         )
     );
+
+    // Guarantee a data point for today. The transaction-delta backfill above
+    // reaches back from the newest *transaction* date, so it leaves no snapshot
+    // for today when the newest transaction is older — and none at all for
+    // investment accounts, which have no Transaction rows. Without this, the
+    // portfolio chart (investment-only) would stay blank until the first daily
+    // cron run. Idempotent: snapshots upsert on (accountId, date).
+    await snapshotAccountBalances(item.userId);
 }

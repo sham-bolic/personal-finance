@@ -13,6 +13,8 @@ import {
     NetWorthHistoryPoint,
     CashFlowHistoryOpts,
     CashFlowHistoryPoint,
+    PortfolioValueHistoryOpts,
+    PortfolioValueHistoryPoint,
 } from './types';
 
 export async function getTotalsByCategory(
@@ -221,6 +223,52 @@ export async function getNetWorthHistory(
             net: assets - liabilities,
         })
     );
+}
+
+// Total invested value over time, summed across a user's investment accounts.
+// Built from AccountBalanceSnapshot (not live Holding rows, which have no
+// history): for an investment account, currentBalance is the account's total
+// market value on that day, so summing it per date reconstructs portfolio
+// value. Account.type is read live rather than denormalized, matching
+// getNetWorthHistory, so a Plaid reclassification applies retroactively.
+export async function getPortfolioValueHistory(
+    userId: string,
+    opts: PortfolioValueHistoryOpts = {},
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<PortfolioValueHistoryPoint[]> {
+    const { from, to } = opts;
+
+    const snapshots = await db.accountBalanceSnapshot.findMany({
+        where: {
+            account: { item: { userId }, type: 'investment' },
+            ...(from || to
+                ? {
+                      date: {
+                          gte: from ? new Date(from) : undefined,
+                          lte: to ? new Date(to) : undefined,
+                      },
+                  }
+                : {}),
+        },
+        select: {
+            date: true,
+            currentBalance: true,
+        },
+        orderBy: { date: 'asc' },
+    });
+
+    const byDate = new Map<string, number>();
+
+    for (const snapshot of snapshots) {
+        const dateKey = snapshot.date.toISOString().slice(0, 10);
+        const value = byDate.get(dateKey) ?? 0;
+        byDate.set(dateKey, value + Number(snapshot.currentBalance));
+    }
+
+    return Array.from(byDate.entries()).map(([date, value]) => ({
+        date,
+        value,
+    }));
 }
 
 // Daily spend/income plus running cumulative totals, built from Transaction
