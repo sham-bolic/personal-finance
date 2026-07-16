@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import type { HoldingDTO } from '@/lib/db/types';
 import {
     formatCurrency,
@@ -7,8 +8,23 @@ import {
     formatQuantity,
     holdingLabel,
 } from './format';
+import {
+    DEFAULT_SORT,
+    nextSortState,
+    sortHoldings,
+    type SortKey,
+    type SortState,
+} from './sortHoldings';
 
 const TOP_N = 3;
+
+const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right' }[] = [
+    { key: 'security', label: 'Security', align: 'left' },
+    { key: 'quantity', label: 'Quantity', align: 'right' },
+    { key: 'price', label: 'Price', align: 'right' },
+    { key: 'marketValue', label: 'Market value', align: 'right' },
+    { key: 'percent', label: '% of portfolio', align: 'right' },
+];
 
 // A single investment account and its holdings, sorted largest-position-first
 // by the caller. Shows the top few by market value with a toggle to reveal the
@@ -27,8 +43,13 @@ export function AccountHoldingsCard({
     holdings: HoldingDTO[];
 }) {
     const [expanded, setExpanded] = useState(false);
-    const hasMore = holdings.length > TOP_N;
-    const visible = expanded ? holdings : holdings.slice(0, TOP_N);
+    const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+    const sorted = useMemo(
+        () => sortHoldings(holdings, sort),
+        [holdings, sort]
+    );
+    const hasMore = sorted.length > TOP_N;
+    const visible = expanded ? sorted : sorted.slice(0, TOP_N);
     const accountFraction =
         portfolioTotal > 0 ? accountTotal / portfolioTotal : 0;
     const currency = holdings[0]?.isoCurrencyCode ?? 'USD';
@@ -60,33 +81,57 @@ export function AccountHoldingsCard({
                     </caption>
                     <thead>
                         <tr className="border-b border-border text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                            <th scope="col" className="px-4 py-3 font-medium">
-                                Security
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-4 py-3 text-right font-medium"
-                            >
-                                Quantity
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-4 py-3 text-right font-medium"
-                            >
-                                Price
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-4 py-3 text-right font-medium"
-                            >
-                                Market value
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-4 py-3 text-right font-medium"
-                            >
-                                % of portfolio
-                            </th>
+                            {COLUMNS.map((col) => {
+                                const active = sort.key === col.key;
+                                const alignRight = col.align === 'right';
+                                const Caret =
+                                    sort.direction === 'asc'
+                                        ? CaretUp
+                                        : CaretDown;
+                                const ariaSort = !active
+                                    ? undefined
+                                    : sort.direction === 'asc'
+                                      ? 'ascending'
+                                      : 'descending';
+                                return (
+                                    <th
+                                        key={col.key}
+                                        scope="col"
+                                        aria-sort={ariaSort}
+                                        className={`px-4 py-3 font-medium ${
+                                            alignRight
+                                                ? 'text-right'
+                                                : 'text-left'
+                                        }`}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSort((current) =>
+                                                    nextSortState(
+                                                        current,
+                                                        col.key
+                                                    )
+                                                )
+                                            }
+                                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 -mx-1 uppercase tracking-wide transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                                                alignRight
+                                                    ? 'flex-row-reverse'
+                                                    : ''
+                                            } ${active ? 'text-foreground' : ''}`}
+                                        >
+                                            {col.label}
+                                            {active && (
+                                                <Caret
+                                                    size={11}
+                                                    weight="bold"
+                                                    aria-hidden="true"
+                                                />
+                                            )}
+                                        </button>
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody>
