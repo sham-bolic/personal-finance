@@ -6,6 +6,7 @@ export * from './types';
 export * from './user';
 export * from './items';
 export * from './accounts';
+export * from './holdings';
 export * from './transactions';
 export * from './analytics';
 export * from './budgets';

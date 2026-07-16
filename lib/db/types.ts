@@ -52,6 +52,33 @@ export type TransactionInput = {
     paymentChannel?: string;
 };
 
+// Write-side shape for a security, mapped from Plaid's `securities` array. The
+// db layer decides identity from these fields: tickerSymbol+type when a ticker
+// is present, else plaidSecurityId. plaidSecurityId is also the linkage key
+// tying a HoldingInput to its SecurityInput within a single sync.
+export type SecurityInput = {
+    plaidSecurityId: string; // Plaid's per-item security_id
+    tickerSymbol?: string;
+    type?: string; // Plaid security type; db layer defaults to 'unknown'
+    name?: string;
+    closePrice?: number;
+    closePriceAsOf?: string; // 'YYYY-MM-DD'
+    isoCurrencyCode?: string;
+};
+
+// Write-side shape for a single holding, mapped from Plaid's `holdings` array.
+// References its account and security by Plaid's ids; the db layer resolves
+// both to internal ids during reconcile.
+export type HoldingInput = {
+    plaidAccountId: string; // Plaid's account_id
+    plaidSecurityId: string; // links to the matching SecurityInput
+    quantity: number;
+    marketValue: number; // Plaid institution_value
+    costBasis?: number;
+    price: number; // Plaid institution_price
+    isoCurrencyCode?: string;
+};
+
 // Read-side filters + pagination for listTransactions.
 export type ListTransactionsOpts = {
     from?: string; // 'YYYY-MM-DD' inclusive lower bound

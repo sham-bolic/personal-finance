@@ -4,6 +4,10 @@ import {
     backfillAccountBalanceHistory,
     deleteTransactions,
     getAccountsByItem,
+    HoldingInput,
+    itemHasInvestmentAccount,
+    reconcileHoldings,
+    SecurityInput,
     TransactionInput,
     updateSyncCursor,
     upsertTransactions,
@@ -34,7 +38,7 @@ export async function syncPage(
             throw new Error(
                 `Sync failed for item ${itemId}: transaction ${transaction.transaction_id} ` +
                     `references unknown Plaid account_id ${transaction.account_id} ` +
-                    `(no matching Account row — accounts may be out of date, re-link or refresh accounts)`
+                    `(no matching Account row - accounts may be out of date, re-link or refresh accounts)`
             );
         }
 
@@ -121,6 +125,49 @@ export async function syncItemFirstPage(item: PlaidItem): Promise<{
 }
 
 /**
+ * Pull current investment holdings for an item and reconcile them into the DB
+ * (upsert securities + holdings, delete sold positions). No-op unless the item
+ * both granted Investments consent and actually has an investment-type account,
+ * so checking-only items never trigger the (billed) investmentsHoldingsGet call.
+ * Pass an already-decrypted token to avoid decrypting twice when the caller has
+ * one on hand.
+ */
+export async function syncItemHoldings(
+    item: PlaidItem,
+    accessToken?: string
+): Promise<void> {
+    if (!item.investmentsConsented) return;
+    if (!(await itemHasInvestmentAccount(item.id))) return;
+
+    const token = accessToken ?? decrypt(item.accessToken);
+    const { data } = await client.investmentsHoldingsGet({
+        access_token: token,
+    });
+
+    const securities: SecurityInput[] = data.securities.map((security) => ({
+        plaidSecurityId: security.security_id,
+        tickerSymbol: security.ticker_symbol ?? undefined,
+        type: security.type ?? undefined,
+        name: security.name ?? undefined,
+        closePrice: security.close_price ?? undefined,
+        closePriceAsOf: security.close_price_as_of ?? undefined,
+        isoCurrencyCode: security.iso_currency_code ?? undefined,
+    }));
+
+    const holdings: HoldingInput[] = data.holdings.map((holding) => ({
+        plaidAccountId: holding.account_id,
+        plaidSecurityId: holding.security_id,
+        quantity: holding.quantity,
+        marketValue: holding.institution_value,
+        costBasis: holding.cost_basis ?? undefined,
+        price: holding.institution_price,
+        isoCurrencyCode: holding.iso_currency_code ?? undefined,
+    }));
+
+    await reconcileHoldings(item.id, securities, holdings);
+}
+
+/**
  * Full historical sync for a freshly-linked item, followed by deriving
  * balance history for each of its accounts from the now-synced transactions.
  * Meant to run in the background (via `after()`) right after linking, so the
@@ -141,5 +188,14 @@ export async function backfillNewItem(item: PlaidItem): Promise<void> {
         Array.from(accountIdByPlaidId.values()).map((accountId) =>
             backfillAccountBalanceHistory(accountId)
         )
+    );
+
+    // Investment holdings, if any. Isolated so a holdings hiccup never fails the
+    // transaction/balance backfill that just succeeded.
+    await syncItemHoldings(item, accessToken).catch((e) =>
+        console.error('Holdings sync failed for newly-linked item', {
+            itemId: item.id,
+            error: e,
+        })
     );
 }

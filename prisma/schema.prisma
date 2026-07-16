@@ -34,7 +34,7 @@ model PlaidItem {
   institutionId   String?
   institutionName String?
 
-  // transactionsSync pagination cursor — null until first successful sync
+  // transactionsSync pagination cursor - null until first successful sync
   syncCursor   String?
   status       String    @default("active") // active | login_required | error
   lastSyncedAt DateTime?
@@ -75,6 +75,7 @@ model Account {
 
   transactions      Transaction[]
   balanceSnapshots  AccountBalanceSnapshot[]
+  holdings          Holding[]
 
   @@index([itemId])
 }
@@ -122,6 +123,67 @@ model AccountBalanceSnapshot {
   @@index([accountId])
 }
 
+// Global, shared reference data for a tradeable security - deliberately NOT
+// userId-scoped (reference data has no tenant; two users holding AAPL share one
+// row). Identity is (tickerSymbol, type) for tickered securities; tickerless
+// ones (e.g. cash) fall back to Plaid's per-item security_id via
+// plaidSecurityId. See issue #7.
+model Security {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  // Present for publicly-traded securities; null for tickerless ones (cash).
+  tickerSymbol String?
+  // Plaid security type: equity | etf | mutual fund | cash | fixed income | ...
+  // Non-null so (tickerSymbol, type) is a well-formed compound unique;
+  // defaults to "unknown" when Plaid can't classify the security.
+  type String @default("unknown")
+
+  // Only set for tickerless securities, where it is the fallback identity.
+  // Left null for tickered securities (which dedupe on tickerSymbol+type), so
+  // this unique index never collides across items sharing a ticker.
+  plaidSecurityId String? @unique
+
+  name String?
+
+  // Latest close price given by Plaid; overwritten in place on each sync.
+  closePrice      Decimal?  @db.Decimal(20, 8)
+  closePriceAsOf  DateTime? @db.Date
+  isoCurrencyCode String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  holdings Holding[]
+
+  @@unique([tickerSymbol, type])
+}
+
+// A current-only snapshot of one account's position in one security. Reconciled
+// on every sync (upserted, and deleted when Plaid stops returning it), so there
+// is no history here. User-scoped transitively through Account -> PlaidItem.
+model Holding {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  accountId String  @db.Uuid
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  securityId String   @db.Uuid
+  security   Security @relation(fields: [securityId], references: [id])
+
+  quantity    Decimal  @db.Decimal(20, 8)
+  costBasis   Decimal? @db.Decimal(20, 4)
+  marketValue Decimal  @db.Decimal(20, 4) // Plaid institution_value
+  price       Decimal  @db.Decimal(20, 8) // Plaid institution_price
+  isoCurrencyCode String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([accountId, securityId])
+  @@index([accountId])
+  @@index([securityId])
+}
+
 enum PlaidPrimaryCategory {
   INCOME
   TRANSFER_IN
@@ -141,7 +203,7 @@ enum PlaidPrimaryCategory {
   RENT_AND_UTILITIES
 }
 
-// Who created a Goal/GoalContribution/Budget row — set once at creation and
+// Who created a Goal/GoalContribution/Budget row - set once at creation and
 // never changed afterward, even if the record is later edited by the other
 // party. See docs/adr/0002-source-provenance-field-created-by-only.md.
 enum Source {
