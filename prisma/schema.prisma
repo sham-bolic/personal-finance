@@ -39,6 +39,11 @@ model PlaidItem {
   status       String    @default("active") // active | login_required | error
   lastSyncedAt DateTime?
 
+  // Whether Plaid Investments consent has been requested for this item. New
+  // items request it at link time; items linked before consent was added stay
+  // false until taken through update mode (see create_update_link_token).
+  investmentsConsented Boolean @default(false)
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

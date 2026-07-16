@@ -63,6 +63,9 @@ export async function POST(request: Request) {
             plaidItemId: item_id,
             accessToken: access_token,
             accounts,
+            // New links request Investments consent at link time (see
+            // create_link_token), so they never need the reconnect opt-in.
+            investmentsConsented: true,
         });
 
         // Full transaction history sync + derived balance backfill run in the

@@ -31,6 +31,11 @@ export async function upsertPlaidItem(
             institutionId: input.institutionId,
             institutionName: input.institutionName,
             status: 'active', // re-link clears any prior error state
+            // Only ever promote consent to true - a re-link should never
+            // silently revoke a previously-granted investments consent.
+            ...(input.investmentsConsented
+                ? { investmentsConsented: true }
+                : {}),
         },
         create: {
             userId: input.userId,
@@ -38,6 +43,7 @@ export async function upsertPlaidItem(
             accessToken: encrypted_token,
             institutionId: input.institutionId,
             institutionName: input.institutionName,
+            investmentsConsented: input.investmentsConsented ?? false,
         },
     });
 }
@@ -62,6 +68,35 @@ export async function getItemsByUser(
     db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<PlaidItem[]> {
     return await db.plaidItem.findMany({ where: { userId } });
+}
+
+/**
+ * Fetch a single item scoped to its owner. Returns null if the item does not
+ * exist or belongs to a different user - callers must treat null as not-found
+ * without leaking whether the id exists.
+ */
+export async function getItemById(
+    userId: string,
+    id: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<PlaidItem | null> {
+    return await db.plaidItem.findFirst({ where: { id, userId } });
+}
+
+/**
+ * Record that Investments consent has been granted for an item (after an
+ * update-mode reconnect). Scoped to the owner; returns the number of rows
+ * updated so the caller can distinguish not-found (0) from success (1).
+ */
+export async function setInvestmentsConsented(
+    userId: string,
+    id: string
+): Promise<number> {
+    const { count } = await prisma.plaidItem.updateMany({
+        where: { id, userId },
+        data: { investmentsConsented: true },
+    });
+    return count;
 }
 
 export async function updateSyncCursor(id: string, syncCursor: string) {

@@ -6,6 +6,7 @@ import { formatPlaidCategory } from '@/lib/plaid_categories';
 import { NetWorthChart } from './NetWorthChart';
 import { CashFlowHistoryChart } from './CashFlowHistoryChart';
 import { GoalsBudgetsWidget } from './GoalsBudgetsWidget';
+import EnableInvestments from '@/app/components/EnableInvestments';
 import type { AccountDTO } from './types';
 
 // Plaid convention: positive amount = money out of the account (outflow),
@@ -119,6 +120,8 @@ export default function TransactionsPage() {
                     Your net worth, cash flow, and recent activity at a glance.
                 </p>
             </header>
+
+            <EnableInvestments />
 
             <DashboardSummary
                 status={summaryStatus}

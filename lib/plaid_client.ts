@@ -1,4 +1,4 @@
-import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+import { Configuration, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 
 const PLAID_ENV = process.env.PLAID_ENV || 'sandbox';
 const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID || '';
@@ -21,3 +21,13 @@ const configuration = new Configuration({
 });
 
 export const client = new PlaidApi(configuration);
+
+// Shown to users inside Plaid Link. Kept here so every linkTokenCreate call
+// (new link and update-mode reconnect) uses one consistent name.
+export const PLAID_CLIENT_NAME = 'My Finances';
+
+// Products for which we collect consent but do not require at link time, so
+// plain checking-only banks still link while brokerages grant them. Consent is
+// requested both at initial link and via the update-mode reconnect flow. Not
+// billed until the corresponding endpoints are actually called.
+export const ADDITIONAL_CONSENTED_PRODUCTS = [Products.Investments];

@@ -11,6 +11,17 @@ export type PlaidItemInput = {
     accessToken: string; // encrypted before storage in upsertPlaidItem
     institutionId?: string;
     institutionName?: string;
+    // Set true when Investments consent was requested for this item (at link
+    // time, or after an update-mode reconnect). Defaults to false.
+    investmentsConsented?: boolean;
+};
+
+// Read-side shape for the linked-institutions list surfaced to the client.
+// Deliberately excludes the access token and other sensitive fields.
+export type ItemDTO = {
+    id: string;
+    institutionName: string | null;
+    investmentsConsented: boolean;
 };
 
 export type AccountInput = {
