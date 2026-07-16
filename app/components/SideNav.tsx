@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     Wallet,
     Target,
+    ChartPie,
     PiggyBank,
     LogOut,
     LogIn,
@@ -24,6 +25,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/budgets', label: 'Budget', icon: Wallet },
     { href: '/goals', label: 'Goals', icon: Target },
+    { href: '/investments', label: 'Investments', icon: ChartPie },
     { href: '/piggyai', label: 'Ask Piggy', icon: PiggyBank },
 ];
 

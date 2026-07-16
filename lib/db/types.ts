@@ -79,6 +79,23 @@ export type HoldingInput = {
     isoCurrencyCode?: string;
 };
 
+// Read-side shape for a user's current holdings, flattened with its joined
+// Security reference data. Decimal columns are serialized to strings (as with
+// TransactionDTO) so the shape is JSON-safe across the API boundary. Percent of
+// portfolio is derived client-side from marketValue, not stored here.
+export type HoldingDTO = {
+    id: string;
+    securityId: string;
+    tickerSymbol: string | null;
+    securityName: string | null;
+    securityType: string;
+    quantity: string; // Decimal → string
+    price: string; // Decimal → string
+    marketValue: string; // Decimal → string
+    costBasis: string | null; // Decimal → string
+    isoCurrencyCode: string | null;
+};
+
 // Read-side filters + pagination for listTransactions.
 export type ListTransactionsOpts = {
     from?: string; // 'YYYY-MM-DD' inclusive lower bound

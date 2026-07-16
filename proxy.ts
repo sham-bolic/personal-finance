@@ -1,7 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/budgets', '/goals', '/piggyai'];
+const PROTECTED_PREFIXES = [
+    '/dashboard',
+    '/budgets',
+    '/goals',
+    '/investments',
+    '/piggyai',
+];
 const AUTH_PREFIXES = ['/login', '/signup'];
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

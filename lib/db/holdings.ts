@@ -1,7 +1,37 @@
 import { prisma } from '@/lib/prisma_client';
 import type { Prisma } from '@/generated/prisma/client';
 import { getAccountsByItem } from './accounts';
-import type { HoldingInput, SecurityInput } from './types';
+import type { HoldingDTO, HoldingInput, SecurityInput } from './types';
+
+/**
+ * Every current holding across a user's investment accounts, joined to its
+ * global Security reference row and ordered largest-position-first by market
+ * value. User-scoped transitively via Holding -> Account -> PlaidItem. Decimal
+ * columns are stringified so the result is JSON-safe for the API boundary.
+ */
+export async function getHoldingsByUser(
+    userId: string,
+    db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<HoldingDTO[]> {
+    const holdings = await db.holding.findMany({
+        where: { account: { item: { userId } } },
+        include: { security: true },
+        orderBy: { marketValue: 'desc' },
+    });
+
+    return holdings.map((h) => ({
+        id: h.id,
+        securityId: h.securityId,
+        tickerSymbol: h.security.tickerSymbol,
+        securityName: h.security.name,
+        securityType: h.security.type,
+        quantity: String(h.quantity),
+        price: String(h.price),
+        marketValue: String(h.marketValue),
+        costBasis: h.costBasis === null ? null : String(h.costBasis),
+        isoCurrencyCode: h.isoCurrencyCode,
+    }));
+}
 
 /**
  * Does this item have at least one investment-type account? Used to gate the
