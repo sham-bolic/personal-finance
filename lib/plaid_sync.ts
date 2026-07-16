@@ -189,13 +189,4 @@ export async function backfillNewItem(item: PlaidItem): Promise<void> {
             backfillAccountBalanceHistory(accountId)
         )
     );
-
-    // Investment holdings, if any. Isolated so a holdings hiccup never fails the
-    // transaction/balance backfill that just succeeded.
-    await syncItemHoldings(item, accessToken).catch((e) =>
-        console.error('Holdings sync failed for newly-linked item', {
-            itemId: item.id,
-            error: e,
-        })
-    );
 }

@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { client, fetchInstitutionForItem } from '@/lib/plaid_client';
 import { AccountInput, getCurrentUser, linkPlaidItem } from '@/lib/db';
-import { backfillNewItem } from '@/lib/plaid_sync';
+import { backfillNewItem, syncItemHoldings } from '@/lib/plaid_sync';
 
 export async function POST(request: Request) {
     let public_token: string | undefined;
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         });
 
         // Full transaction history sync + derived balance backfill run in the
-        // background so linking responds immediately — the net worth graph
+        // background so linking responds immediately - the net worth graph
         // otherwise starts as a flat line from today.
         after(
             backfillNewItem(item).catch((e) =>
@@ -81,6 +81,23 @@ export async function POST(request: Request) {
                     itemId: item.id,
                     error: e,
                 })
+            )
+        );
+
+        // Investment holdings backfill runs as its own background sync, in
+        // parallel with the transaction backfill above: holdings don't depend
+        // on transaction history, so they shouldn't wait behind it, and a
+        // failure in one shouldn't sink the other. No-op for non-investment /
+        // non-consented items.
+        after(
+            syncItemHoldings(item).catch((e) =>
+                console.error(
+                    'Holdings backfill failed for newly-linked item',
+                    {
+                        itemId: item.id,
+                        error: e,
+                    }
+                )
             )
         );
 
