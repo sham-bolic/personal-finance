@@ -3,12 +3,46 @@ import axios from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HoldingDTO } from '@/lib/db/types';
 import { AllocationPieChart } from './AllocationPieChart';
-import {
-    formatCurrency,
-    formatPercent,
-    formatQuantity,
-    holdingLabel,
-} from './format';
+import { AccountHoldingsCard } from './AccountHoldingsCard';
+
+// Human-readable subtitle for an account card: subtype (e.g. "401k", "ira")
+// plus the masked account number when present, e.g. "401k · ••1234".
+function accountSubtitle(h: HoldingDTO): string | null {
+    const parts: string[] = [];
+    if (h.accountSubtype) parts.push(h.accountSubtype);
+    if (h.accountMask) parts.push(`••${h.accountMask}`);
+    return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+// Group holdings (already sorted largest-value-first) into per-account buckets,
+// each ordered by the account's total market value descending.
+type AccountGroup = {
+    accountId: string;
+    accountName: string;
+    subtitle: string | null;
+    total: number;
+    holdings: HoldingDTO[];
+};
+
+function groupByAccount(holdings: HoldingDTO[]): AccountGroup[] {
+    const byId = new Map<string, AccountGroup>();
+    for (const h of holdings) {
+        let group = byId.get(h.accountId);
+        if (!group) {
+            group = {
+                accountId: h.accountId,
+                accountName: h.accountName,
+                subtitle: accountSubtitle(h),
+                total: 0,
+                holdings: [],
+            };
+            byId.set(h.accountId, group);
+        }
+        group.total += Number(h.marketValue);
+        group.holdings.push(h);
+    }
+    return Array.from(byId.values()).sort((a, b) => b.total - a.total);
+}
 
 export default function InvestmentsPage() {
     const [holdings, setHoldings] = useState<HoldingDTO[]>([]);
@@ -35,6 +69,7 @@ export default function InvestmentsPage() {
         () => holdings.reduce((sum, h) => sum + Number(h.marketValue), 0),
         [holdings]
     );
+    const accountGroups = useMemo(() => groupByAccount(holdings), [holdings]);
 
     return (
         <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
@@ -86,111 +121,16 @@ export default function InvestmentsPage() {
                         <AllocationPieChart holdings={holdings} total={total} />
                     </section>
 
-                    <section className="overflow-hidden rounded-2xl border border-border/60 bg-surface">
-                        <header className="border-b border-border px-4 py-3">
-                            <h2 className="text-sm font-medium text-muted-foreground">
-                                Holdings
-                            </h2>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {holdings.length}{' '}
-                                {holdings.length === 1
-                                    ? 'position'
-                                    : 'positions'}
-                            </p>
-                        </header>
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-sm">
-                                <caption className="sr-only">
-                                    List of investment holdings
-                                </caption>
-                                <thead>
-                                    <tr className="border-b border-border text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3 font-medium"
-                                        >
-                                            Security
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3 text-right font-medium"
-                                        >
-                                            Quantity
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3 text-right font-medium"
-                                        >
-                                            Price
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3 text-right font-medium"
-                                        >
-                                            Market value
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3 text-right font-medium"
-                                        >
-                                            % of portfolio
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {holdings.map((h) => {
-                                        const marketValue = Number(
-                                            h.marketValue
-                                        );
-                                        const fraction =
-                                            total > 0 ? marketValue / total : 0;
-                                        return (
-                                            <tr
-                                                key={h.id}
-                                                className="border-b border-border transition-colors last:border-0 hover:bg-surface-hover"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">
-                                                            {holdingLabel(h)}
-                                                        </span>
-                                                        {h.tickerSymbol &&
-                                                            h.securityName && (
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {
-                                                                        h.securityName
-                                                                    }
-                                                                </span>
-                                                            )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
-                                                    {formatQuantity(
-                                                        Number(h.quantity)
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
-                                                    {formatCurrency(
-                                                        Number(h.price),
-                                                        h.isoCurrencyCode
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums">
-                                                    {formatCurrency(
-                                                        marketValue,
-                                                        h.isoCurrencyCode
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
-                                                    {formatPercent(fraction)}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
+                    {accountGroups.map((group) => (
+                        <AccountHoldingsCard
+                            key={group.accountId}
+                            accountName={group.accountName}
+                            accountSubtitle={group.subtitle}
+                            accountTotal={group.total}
+                            portfolioTotal={total}
+                            holdings={group.holdings}
+                        />
+                    ))}
                 </div>
             )}
         </main>

@@ -15,12 +15,16 @@ export async function getHoldingsByUser(
 ): Promise<HoldingDTO[]> {
     const holdings = await db.holding.findMany({
         where: { account: { item: { userId } } },
-        include: { security: true },
+        include: { security: true, account: true },
         orderBy: { marketValue: 'desc' },
     });
 
     return holdings.map((h) => ({
         id: h.id,
+        accountId: h.accountId,
+        accountName: h.account.name,
+        accountMask: h.account.mask,
+        accountSubtype: h.account.subtype,
         securityId: h.securityId,
         tickerSymbol: h.security.tickerSymbol,
         securityName: h.security.name,

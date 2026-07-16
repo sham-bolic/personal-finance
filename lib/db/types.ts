@@ -85,6 +85,10 @@ export type HoldingInput = {
 // portfolio is derived client-side from marketValue, not stored here.
 export type HoldingDTO = {
     id: string;
+    accountId: string;
+    accountName: string;
+    accountMask: string | null;
+    accountSubtype: string | null;
     securityId: string;
     tickerSymbol: string | null;
     securityName: string | null;

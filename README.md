@@ -24,12 +24,12 @@ take action over your financial data.
 
 ## Screenshots
 
-| Dashboard | Budgets |
-| --- | --- |
+| Dashboard                                      | Budgets                                    |
+| ---------------------------------------------- | ------------------------------------------ |
 | ![Dashboard](public/screenshots/dashboard.png) | ![Budgets](public/screenshots/budgets.png) |
 
-| Goals | PiggyAI |
-| --- | --- |
+| Goals                                  | PiggyAI                                    |
+| -------------------------------------- | ------------------------------------------ |
 | ![Goals](public/screenshots/goals.png) | ![PiggyAI](public/screenshots/piggyai.png) |
 
 ## Getting started
