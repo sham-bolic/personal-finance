@@ -55,12 +55,12 @@ export function NetWorthChart({
         null
     );
 
-    const { from: rangeFrom, to: rangeTo } = rangeForScale(scale);
-
     const chartData = useMemo(
         () => history.map((h) => ({ ...h, ts: dateToTimestamp(h.date) })),
         [history]
     );
+    const dataMinTs = Math.min(...chartData.map((d) => d.ts));
+    const dataMaxTs = Math.max(...chartData.map((d) => d.ts));
     const activePoint = hover ? chartData[hover.index] : null;
 
     const handleHover = useCallback((state: MouseHandlerDataParam) => {
@@ -212,7 +212,11 @@ export function NetWorthChart({
                                 axisLine={false}
                                 tickLine={false}
                                 minTickGap={32}
-                                ticks={computeTicks(scale, rangeFrom, rangeTo)}
+                                ticks={computeTicks(
+                                    scale,
+                                    dataMinTs,
+                                    dataMaxTs
+                                )}
                             />
                             <YAxis
                                 tickFormatter={(value: number) =>

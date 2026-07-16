@@ -46,37 +46,53 @@ export function formatTooltipDate(ts: number) {
     });
 }
 
-// The x-axis is a true time scale (see NetWorthChart/CashFlowHistoryChart),
-// so ticks can land on any calendar boundary — they no longer have to match
-// a date that actually exists in the (possibly sparse) dataset. At
-// 'year'/'5year' scale, where formatAxisDate only shows month+year, picking
-// one tick per calendar month/year keeps every rendered label distinct
-// instead of letting the axis's auto-spacing repeat the same label.
+// The x-axis is a true time scale (see NetWorthChart/CashFlowHistoryChart)
+// whose domain is ['dataMin', 'dataMax'] of the actual chart data, not the
+// requested from/to range — a new account (or, for investments, a portfolio
+// with only one balance snapshot so far) can have real data that covers far
+// less time than the selected scale. Ticks must be derived from that same
+// actual data span; deriving them from the wider nominal range instead lets
+// tick timestamps fall outside — or, in the single-data-point case, equal —
+// the domain, which for a zero-width domain collapses every tick onto the
+// same pixel and renders as stacked, overlapping text. At 'year'/'5year'
+// scale, where formatAxisDate only shows month+year, picking one tick per
+// calendar month/year keeps every rendered label distinct instead of
+// letting the axis's auto-spacing repeat the same label.
 export function computeTicks(
     scale: TimeScale,
-    from: string,
-    to: string
+    dataMinTs: number,
+    dataMaxTs: number
 ): number[] | undefined {
     if (scale === 'week' || scale === 'month') return undefined; // day-level labels are already unique
+    if (!Number.isFinite(dataMinTs) || !Number.isFinite(dataMaxTs))
+        return undefined;
 
-    const start = parseLocalDate(from);
-    const end = parseLocalDate(to);
+    const start = new Date(dataMinTs);
     const ticks: number[] = [];
 
+    // Calendar-boundary ticks (month/year starts) can land before dataMinTs
+    // even though they're within the nominal from/to range — e.g. a account
+    // with 3 months of history only "starts" partway into its first
+    // calendar month. Such a tick sits outside the axis's actual
+    // ['dataMin', 'dataMax'] domain and silently fails to render, so it's
+    // dropped here rather than left for Recharts to discard.
     if (scale === 'year') {
         const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-        while (cursor <= end) {
-            ticks.push(cursor.getTime());
+        while (cursor.getTime() <= dataMaxTs) {
+            if (cursor.getTime() >= dataMinTs) ticks.push(cursor.getTime());
             cursor.setMonth(cursor.getMonth() + 1);
         }
     } else {
         const cursor = new Date(start.getFullYear(), 0, 1);
-        while (cursor <= end) {
-            ticks.push(cursor.getTime());
+        while (cursor.getTime() <= dataMaxTs) {
+            if (cursor.getTime() >= dataMinTs) ticks.push(cursor.getTime());
             cursor.setFullYear(cursor.getFullYear() + 1);
         }
     }
-    return ticks;
+    // No calendar boundary fell inside the domain at all (e.g. data doesn't
+    // yet span a full month/year) — anchor a single tick at the domain's
+    // own start so the axis isn't left blank.
+    return ticks.length > 0 ? ticks : [dataMinTs];
 }
 
 // localStorage is read via useSyncExternalStore rather than mirrored into
