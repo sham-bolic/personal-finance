@@ -66,6 +66,45 @@ export function holdingGainLossPercent(h: HoldingDTO): number | null {
     return gainLoss / costBasis;
 }
 
+// Tailwind color token for a gain/loss value - shared by the per-holding
+// column and the portfolio-level totals so both agree on what counts as
+// "up", "down", or neutral (null or exactly zero).
+export function gainLossColor(gainLoss: number | null): string {
+    if (gainLoss === null) return 'text-muted-foreground';
+    if (gainLoss > 0) return 'text-positive';
+    if (gainLoss < 0) return 'text-negative';
+    return 'text-muted-foreground';
+}
+
+export type PortfolioTotals = {
+    costBasis: number;
+    gainLoss: number;
+    gainLossPercent: number | null;
+};
+
+// Sums cost basis and unrealized gain/loss across holdings that report a
+// cost basis. Positions without one (Plaid doesn't return cost basis for
+// every institution/security type) are skipped entirely rather than
+// treated as a $0 cost basis, so they can't drag the total toward a
+// misleadingly large gain.
+export function computePortfolioTotals(
+    holdings: HoldingDTO[]
+): PortfolioTotals {
+    let costBasis = 0;
+    let marketValue = 0;
+    for (const h of holdings) {
+        if (h.costBasis === null) continue;
+        costBasis += Number(h.costBasis);
+        marketValue += Number(h.marketValue);
+    }
+    const gainLoss = marketValue - costBasis;
+    return {
+        costBasis,
+        gainLoss,
+        gainLossPercent: costBasis === 0 ? null : gainLoss / costBasis,
+    };
+}
+
 // Up to 6 significant digits, trimming trailing zeros - share counts are often
 // fractional but rarely need more precision than that on screen.
 export function formatQuantity(value: number): string {

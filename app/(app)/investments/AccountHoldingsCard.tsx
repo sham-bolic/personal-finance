@@ -8,6 +8,7 @@ import {
     formatQuantity,
     formatSignedCurrency,
     formatSignedPercent,
+    gainLossColor,
     holdingGainLoss,
     holdingGainLossPercent,
     holdingLabel,
@@ -21,13 +22,6 @@ import {
 import { loadSort, saveSort } from './sortPersistence';
 
 const TOP_N = 3;
-
-function gainLossColor(gainLoss: number | null): string {
-    if (gainLoss === null) return 'text-muted-foreground';
-    if (gainLoss > 0) return 'text-positive';
-    if (gainLoss < 0) return 'text-negative';
-    return 'text-muted-foreground';
-}
 
 // Fixed widths (summing to 100%) so re-sorting - which swaps in different
 // rows with different text lengths - can't reflow the columns themselves.
