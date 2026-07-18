@@ -3,10 +3,10 @@
 // what "next" means on a repeat click) can be reasoned about on their own.
 
 import type { HoldingDTO } from '@/lib/db/types';
-import { holdingLabel } from './format';
+import { holdingGainLoss, holdingLabel } from './format';
 
 export type SortKey =
-    'security' | 'quantity' | 'price' | 'marketValue' | 'percent';
+    'security' | 'quantity' | 'price' | 'marketValue' | 'gainLoss' | 'percent';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -50,8 +50,13 @@ function compareNumericField(
 // Ascending comparator per column. "percent" is marketValue divided by a
 // constant (the portfolio total), so it produces the same order as
 // marketValue - comparing marketValue directly avoids recomputing the
-// fraction and sidesteps a portfolioTotal of 0.
-function compareAscending(a: HoldingDTO, b: HoldingDTO, key: SortKey): number {
+// fraction and sidesteps a portfolioTotal of 0. "gainLoss" is handled
+// separately by sortHoldings since it needs null-specific placement.
+function compareAscending(
+    a: HoldingDTO,
+    b: HoldingDTO,
+    key: Exclude<SortKey, 'gainLoss'>
+): number {
     switch (key) {
         case 'security':
             return holdingLabel(a).localeCompare(holdingLabel(b), 'en-US', {
@@ -71,7 +76,18 @@ export function sortHoldings(
     sort: SortState
 ): HoldingDTO[] {
     const sign = sort.direction === 'asc' ? 1 : -1;
-    return [...holdings].sort(
-        (a, b) => sign * compareAscending(a, b, sort.key)
-    );
+    return [...holdings].sort((a, b) => {
+        if (sort.key === 'gainLoss') {
+            const gainA = holdingGainLoss(a);
+            const gainB = holdingGainLoss(b);
+            // Holdings with no cost basis (Plaid doesn't report it for every
+            // security type) always sink to the bottom, regardless of sort
+            // direction, instead of flip-flopping to the top on descending.
+            if (gainA === null && gainB === null) return 0;
+            if (gainA === null) return 1;
+            if (gainB === null) return -1;
+            return sign * (gainA - gainB);
+        }
+        return sign * compareAscending(a, b, sort.key);
+    });
 }

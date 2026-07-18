@@ -6,6 +6,10 @@ import {
     formatCurrency,
     formatPercent,
     formatQuantity,
+    formatSignedCurrency,
+    formatSignedPercent,
+    holdingGainLoss,
+    holdingGainLossPercent,
     holdingLabel,
 } from './format';
 import {
@@ -26,16 +30,17 @@ const COLUMNS: {
     align: 'left' | 'right';
     width: string;
 }[] = [
-    { key: 'security', label: 'Security', align: 'left', width: '34%' },
-    { key: 'quantity', label: 'Quantity', align: 'right', width: '15%' },
-    { key: 'price', label: 'Price', align: 'right', width: '15%' },
+    { key: 'security', label: 'Security', align: 'left', width: '26%' },
+    { key: 'quantity', label: 'Quantity', align: 'right', width: '12%' },
+    { key: 'price', label: 'Price', align: 'right', width: '13%' },
     {
         key: 'marketValue',
         label: 'Market value',
         align: 'right',
-        width: '18%',
+        width: '16%',
     },
-    { key: 'percent', label: '% of portfolio', align: 'right', width: '18%' },
+    { key: 'percent', label: '% of portfolio', align: 'right', width: '15%' },
+    { key: 'gainLoss', label: 'Gain/loss', align: 'right', width: '18%' },
 ];
 
 // A single investment account and its holdings, sorted largest-position-first
@@ -170,6 +175,16 @@ export function AccountHoldingsCard({
                                 portfolioTotal > 0
                                     ? marketValue / portfolioTotal
                                     : 0;
+                            const gainLoss = holdingGainLoss(h);
+                            const gainLossPercent = holdingGainLossPercent(h);
+                            const gainLossColor =
+                                gainLoss === null
+                                    ? 'text-muted-foreground'
+                                    : gainLoss > 0
+                                      ? 'text-positive'
+                                      : gainLoss < 0
+                                        ? 'text-negative'
+                                        : 'text-muted-foreground';
                             return (
                                 <tr
                                     key={h.id}
@@ -205,6 +220,29 @@ export function AccountHoldingsCard({
                                     </td>
                                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
                                         {formatPercent(fraction)}
+                                    </td>
+                                    <td
+                                        className={`px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums ${gainLossColor}`}
+                                    >
+                                        {gainLoss === null ? (
+                                            <span>—</span>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <span>
+                                                    {formatSignedCurrency(
+                                                        gainLoss,
+                                                        h.isoCurrencyCode
+                                                    )}
+                                                </span>
+                                                {gainLossPercent !== null && (
+                                                    <span className="text-xs">
+                                                        {formatSignedPercent(
+                                                            gainLossPercent
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             );
