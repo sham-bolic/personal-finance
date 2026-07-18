@@ -59,10 +59,11 @@ export function holdingGainLoss(h: HoldingDTO): number | null {
 }
 
 export function holdingGainLossPercent(h: HoldingDTO): number | null {
-    if (h.costBasis === null) return null;
+    const gainLoss = holdingGainLoss(h);
+    if (gainLoss === null) return null;
     const costBasis = Number(h.costBasis);
     if (costBasis === 0) return null;
-    return (Number(h.marketValue) - costBasis) / costBasis;
+    return gainLoss / costBasis;
 }
 
 // Up to 6 significant digits, trimming trailing zeros - share counts are often

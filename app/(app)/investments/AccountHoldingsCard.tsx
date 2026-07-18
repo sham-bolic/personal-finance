@@ -22,6 +22,13 @@ import { loadSort, saveSort } from './sortPersistence';
 
 const TOP_N = 3;
 
+function gainLossColor(gainLoss: number | null): string {
+    if (gainLoss === null) return 'text-muted-foreground';
+    if (gainLoss > 0) return 'text-positive';
+    if (gainLoss < 0) return 'text-negative';
+    return 'text-muted-foreground';
+}
+
 // Fixed widths (summing to 100%) so re-sorting - which swaps in different
 // rows with different text lengths - can't reflow the columns themselves.
 const COLUMNS: {
@@ -30,16 +37,17 @@ const COLUMNS: {
     align: 'left' | 'right';
     width: string;
 }[] = [
-    { key: 'security', label: 'Security', align: 'left', width: '26%' },
-    { key: 'quantity', label: 'Quantity', align: 'right', width: '12%' },
-    { key: 'price', label: 'Price', align: 'right', width: '13%' },
+    { key: 'security', label: 'Security', align: 'left', width: '22%' },
+    { key: 'quantity', label: 'Quantity', align: 'right', width: '10%' },
+    { key: 'price', label: 'Price', align: 'right', width: '11%' },
     {
         key: 'marketValue',
         label: 'Market value',
         align: 'right',
-        width: '16%',
+        width: '14%',
     },
-    { key: 'percent', label: '% of portfolio', align: 'right', width: '15%' },
+    { key: 'percent', label: '% of portfolio', align: 'right', width: '12%' },
+    { key: 'costBasis', label: 'Cost basis', align: 'right', width: '13%' },
     { key: 'gainLoss', label: 'Gain/loss', align: 'right', width: '18%' },
 ];
 
@@ -177,14 +185,6 @@ export function AccountHoldingsCard({
                                     : 0;
                             const gainLoss = holdingGainLoss(h);
                             const gainLossPercent = holdingGainLossPercent(h);
-                            const gainLossColor =
-                                gainLoss === null
-                                    ? 'text-muted-foreground'
-                                    : gainLoss > 0
-                                      ? 'text-positive'
-                                      : gainLoss < 0
-                                        ? 'text-negative'
-                                        : 'text-muted-foreground';
                             return (
                                 <tr
                                     key={h.id}
@@ -221,8 +221,18 @@ export function AccountHoldingsCard({
                                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
                                         {formatPercent(fraction)}
                                     </td>
+                                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
+                                        {h.costBasis === null ? (
+                                            <span>—</span>
+                                        ) : (
+                                            formatCurrency(
+                                                Number(h.costBasis),
+                                                h.isoCurrencyCode
+                                            )
+                                        )}
+                                    </td>
                                     <td
-                                        className={`px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums ${gainLossColor}`}
+                                        className={`px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums ${gainLossColor(gainLoss)}`}
                                     >
                                         {gainLoss === null ? (
                                             <span>—</span>
