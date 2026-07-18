@@ -6,6 +6,11 @@ import {
     formatCurrency,
     formatPercent,
     formatQuantity,
+    formatSignedCurrency,
+    formatSignedPercent,
+    gainLossColor,
+    holdingGainLoss,
+    holdingGainLossPercent,
     holdingLabel,
 } from './format';
 import {
@@ -26,16 +31,18 @@ const COLUMNS: {
     align: 'left' | 'right';
     width: string;
 }[] = [
-    { key: 'security', label: 'Security', align: 'left', width: '34%' },
-    { key: 'quantity', label: 'Quantity', align: 'right', width: '15%' },
-    { key: 'price', label: 'Price', align: 'right', width: '15%' },
+    { key: 'security', label: 'Security', align: 'left', width: '22%' },
+    { key: 'quantity', label: 'Quantity', align: 'right', width: '10%' },
+    { key: 'price', label: 'Price', align: 'right', width: '11%' },
     {
         key: 'marketValue',
         label: 'Market value',
         align: 'right',
-        width: '18%',
+        width: '14%',
     },
-    { key: 'percent', label: '% of portfolio', align: 'right', width: '18%' },
+    { key: 'percent', label: '% of portfolio', align: 'right', width: '12%' },
+    { key: 'costBasis', label: 'Cost basis', align: 'right', width: '13%' },
+    { key: 'gainLoss', label: 'Gain/loss', align: 'right', width: '18%' },
 ];
 
 // A single investment account and its holdings, sorted largest-position-first
@@ -170,6 +177,8 @@ export function AccountHoldingsCard({
                                 portfolioTotal > 0
                                     ? marketValue / portfolioTotal
                                     : 0;
+                            const gainLoss = holdingGainLoss(h);
+                            const gainLossPercent = holdingGainLossPercent(h);
                             return (
                                 <tr
                                     key={h.id}
@@ -205,6 +214,39 @@ export function AccountHoldingsCard({
                                     </td>
                                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
                                         {formatPercent(fraction)}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums text-muted-foreground">
+                                        {h.costBasis === null ? (
+                                            <span>—</span>
+                                        ) : (
+                                            formatCurrency(
+                                                Number(h.costBasis),
+                                                h.isoCurrencyCode
+                                            )
+                                        )}
+                                    </td>
+                                    <td
+                                        className={`px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums ${gainLossColor(gainLoss)}`}
+                                    >
+                                        {gainLoss === null ? (
+                                            <span>—</span>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <span>
+                                                    {formatSignedCurrency(
+                                                        gainLoss,
+                                                        h.isoCurrencyCode
+                                                    )}
+                                                </span>
+                                                {gainLossPercent !== null && (
+                                                    <span className="text-xs">
+                                                        {formatSignedPercent(
+                                                            gainLossPercent
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             );

@@ -3,10 +3,16 @@
 // what "next" means on a repeat click) can be reasoned about on their own.
 
 import type { HoldingDTO } from '@/lib/db/types';
-import { holdingLabel } from './format';
+import { holdingGainLoss, holdingLabel } from './format';
 
 export type SortKey =
-    'security' | 'quantity' | 'price' | 'marketValue' | 'percent';
+    | 'security'
+    | 'quantity'
+    | 'price'
+    | 'marketValue'
+    | 'percent'
+    | 'costBasis'
+    | 'gainLoss';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -50,8 +56,14 @@ function compareNumericField(
 // Ascending comparator per column. "percent" is marketValue divided by a
 // constant (the portfolio total), so it produces the same order as
 // marketValue - comparing marketValue directly avoids recomputing the
-// fraction and sidesteps a portfolioTotal of 0.
-function compareAscending(a: HoldingDTO, b: HoldingDTO, key: SortKey): number {
+// fraction and sidesteps a portfolioTotal of 0. "costBasis" and "gainLoss"
+// are handled separately by sortHoldings since both are nullable and need
+// null-specific placement.
+function compareAscending(
+    a: HoldingDTO,
+    b: HoldingDTO,
+    key: Exclude<SortKey, 'costBasis' | 'gainLoss'>
+): number {
     switch (key) {
         case 'security':
             return holdingLabel(a).localeCompare(holdingLabel(b), 'en-US', {
@@ -66,12 +78,41 @@ function compareAscending(a: HoldingDTO, b: HoldingDTO, key: SortKey): number {
     }
 }
 
+function nullableFieldFor(
+    h: HoldingDTO,
+    key: 'costBasis' | 'gainLoss'
+): number | null {
+    if (key === 'gainLoss') return holdingGainLoss(h);
+    return h.costBasis === null ? null : Number(h.costBasis);
+}
+
+// Holdings with no value for the sorted column (Plaid doesn't report cost
+// basis for every security type) always sink to the bottom, regardless of
+// sort direction, instead of flip-flopping to the top on descending.
+function compareNullableNumeric(
+    valueA: number | null,
+    valueB: number | null,
+    sign: number
+): number {
+    if (valueA === null && valueB === null) return 0;
+    if (valueA === null) return 1;
+    if (valueB === null) return -1;
+    return sign * (valueA - valueB);
+}
+
 export function sortHoldings(
     holdings: HoldingDTO[],
     sort: SortState
 ): HoldingDTO[] {
     const sign = sort.direction === 'asc' ? 1 : -1;
-    return [...holdings].sort(
-        (a, b) => sign * compareAscending(a, b, sort.key)
-    );
+    return [...holdings].sort((a, b) => {
+        if (sort.key === 'costBasis' || sort.key === 'gainLoss') {
+            return compareNullableNumeric(
+                nullableFieldFor(a, sort.key),
+                nullableFieldFor(b, sort.key),
+                sign
+            );
+        }
+        return sign * compareAscending(a, b, sort.key);
+    });
 }
