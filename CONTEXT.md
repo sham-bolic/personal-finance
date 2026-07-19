@@ -31,3 +31,11 @@ _Avoid_: Destructive confirmation gate (superseded — the gate isn't scoped to 
 **Proposal**:
 The staged, not-yet-executed description of a write Piggy wants to make, built from ground-truth server-side data (never from the agent's own free-text) so the confirmation card can't misrepresent what a record currently contains or what a delete would remove.
 _Avoid_: Draft, pending action
+
+**Security**:
+global, tenant-less reference data (dedupes on `tickerSymbol`+`type`, falls back to Plaid's `plaidSecurityId` for tickerless securities like cash) vs. **Holding** and **InvestmentTransaction**, which are user-scoped.
+_Avoid_: security (generic), ticker symbol, plaidSecurityId
+
+**Holding**:
+current-only snapshot of a position, reconciled (upserted + deleted) on every sync - no history, as distinct from the append-only ledger of InvestmentTransaction.
+_Avoid_: position, snapshot, holding (lowercase)
